@@ -34,7 +34,7 @@ docs-update-version: docs-image
 			--entrypoint /usr/bin/find \
 			--platform $(DOCKER_PLATFORM) \
 			--name vmdocs-docker-container \
-			-v ./docs:/opt/docs/content/victoriametrics vmdocs-docker-package \
+			-v ./docs:/opt/docs/content/victorialogs vmdocs-docker-package \
 				content \
 					-regex ".*\.md" \
 					-exec sed -i 's/{{% available_from "#" %}}/{{% available_from "$(PKG_TAG)" %}}/g' {} \;, \
@@ -48,7 +48,7 @@ docs-images-to-webp: docs-image
 		--platform $(DOCKER_PLATFORM) \
 		--entrypoint /usr/bin/find \
 		--name vmdocs-docker-container \
-		-v ./docs:/opt/docs/content/victoriametrics vmdocs-docker-package \
+		-v ./docs:/opt/docs/content/victorialogs vmdocs-docker-package \
 			content \
 				-regex ".*\.\(png\|jpg\|jpeg\)" \
 				-exec sh -c 'cwebp -preset drawing -m 6 -o $$(echo {} | cut -f-1 -d.).webp {} && rm -rf {}' {} \;
