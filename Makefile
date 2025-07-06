@@ -21,6 +21,7 @@ include codespell/Makefile
 include docs/Makefile
 include deployment/*/Makefile
 include dashboards/Makefile
+include package/release/Makefile
 
 all: \
 	victoria-logs-prod \
