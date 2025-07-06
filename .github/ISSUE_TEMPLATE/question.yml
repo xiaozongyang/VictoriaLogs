@@ -1,5 +1,5 @@
 name: Question
-description: Ask a question regarding VictoriaMetrics or its components
+description: Ask a question regarding VictoriaLogs or its components
 labels: [question]
 body:
   - type: textarea
@@ -7,7 +7,7 @@ body:
     attributes:
       label: Is your question request related to a specific component?
       placeholder: |
-        VictoriaMetrics, vmagent, vmalert, vmui, etc...
+        VictoriaLogs, vlagent, vlogscli, built-in web UI, Grafana plugin, etc...
     validations:
       required: false
   - type: textarea
@@ -19,14 +19,12 @@ body:
     validations:
       required: true
   - type: checkboxes
-    id: troubleshooting
+    id: keyconcepts
     attributes:
-      label: Troubleshooting docs
-      description: I am familiar with the following troubleshooting docs
+      label: Key concepts docs
+      description: I am familiar with the following docs
       options:
-        - label: General - https://docs.victoriametrics.com/victoriametrics/troubleshooting/
+        - label: VictoriaLogs key conepts - https://docs.victoriametrics.com/victorialogs/keyconcepts/
           required: false
-        - label: vmagent - https://docs.victoriametrics.com/victoriametrics/vmagent/#troubleshooting
-          required: false
-        - label: vmalert - https://docs.victoriametrics.com/victoriametrics/vmalert/#troubleshooting
+        - label: LogsQL - https://docs.victoriametrics.com/victorialogs/logsql/
           required: false
