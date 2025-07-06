@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
+	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleIngestionWithRelabeling(t *testing.T) {

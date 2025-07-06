@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 type testBackupRestoreOpts struct {

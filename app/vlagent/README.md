@@ -1,3 +1,3 @@
 See vlagent docs [here](https://docs.victoriametrics.com/victorialogs/vlagent/).
 
-vlagent docs can be edited at [docs/vlagent.md](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/docs/victorialogs/vlagent.md).
+The sources of vlagent docs are located [here](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/docs/victorialogs/vlagent.md).

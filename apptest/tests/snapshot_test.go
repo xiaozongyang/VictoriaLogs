@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // snapshotNameRE covers years 1970-2099.

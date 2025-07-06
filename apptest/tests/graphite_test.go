@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func testMetricsIndex(t *testing.T, sut at.PrometheusWriteQuerier) {

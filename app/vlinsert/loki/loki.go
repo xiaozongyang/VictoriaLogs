@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/insertutil"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 var disableMessageParsing = flag.Bool("loki.disableMessageParsing", false, "Whether to disable automatic parsing of JSON-encoded log fields inside Loki log message into distinct log fields")

@@ -6,7 +6,7 @@ package logsql
 
 //line app/vlselect/logsql/query_response.qtpl:1
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 // JSONRow creates JSON row from the given fields.

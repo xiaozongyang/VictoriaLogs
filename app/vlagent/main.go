@@ -7,9 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlagent/remotewrite"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
@@ -17,6 +14,10 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlagent/remotewrite"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/insertutil"
 )
 
 var (

@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // Data used in examples in

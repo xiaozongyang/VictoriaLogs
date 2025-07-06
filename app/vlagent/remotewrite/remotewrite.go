@@ -8,17 +8,17 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/VictoriaMetrics/metrics"
-	"github.com/cespare/xxhash/v2"
-
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage/netinsert"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/memory"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/persistentqueue"
+	"github.com/VictoriaMetrics/metrics"
+	"github.com/cespare/xxhash/v2"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlstorage/netinsert"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 var (

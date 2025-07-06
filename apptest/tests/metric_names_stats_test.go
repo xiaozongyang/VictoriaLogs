@@ -9,8 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleMetricNamesStats(t *testing.T) {

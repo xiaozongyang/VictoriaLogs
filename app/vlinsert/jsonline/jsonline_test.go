@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/insertutil"
 )
 
 func TestProcessStreamInternalSuccess(t *testing.T) {

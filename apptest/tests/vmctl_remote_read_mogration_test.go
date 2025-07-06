@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/prometheus/prometheus/prompb"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleVmctlRemoteReadProtocol(t *testing.T) {

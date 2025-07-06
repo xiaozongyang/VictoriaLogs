@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleVMAuthRouterWithAuth(t *testing.T) {

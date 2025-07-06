@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 type clusterWithReplication struct {

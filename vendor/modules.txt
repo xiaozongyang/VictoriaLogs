@@ -113,24 +113,6 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps/managedidentity
 github.com/AzureAD/microsoft-authentication-library-for-go/apps/public
 # github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-00010101000000-000000000000 => github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-20250706151707-8646b73efc0e
 ## explicit; go 1.24.4
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlagent/remotewrite
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/datadog
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/elasticsearch
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/internalinsert
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/journald
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/jsonline
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/loki
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/opentelemetry
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/syslog
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlselect
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlselect/internalselect
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlselect/logsql
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage/netinsert
-github.com/VictoriaMetrics/VictoriaMetrics/app/vlstorage/netselect
-github.com/VictoriaMetrics/VictoriaMetrics/apptest
 github.com/VictoriaMetrics/VictoriaMetrics/lib/appmetrics
 github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/auth
@@ -171,7 +153,6 @@ github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver
 github.com/VictoriaMetrics/VictoriaMetrics/lib/ingestserver/opentsdbhttp
 github.com/VictoriaMetrics/VictoriaMetrics/lib/leveledbytebufferpool
 github.com/VictoriaMetrics/VictoriaMetrics/lib/logger
-github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage
 github.com/VictoriaMetrics/VictoriaMetrics/lib/lrucache
 github.com/VictoriaMetrics/VictoriaMetrics/lib/memory
 github.com/VictoriaMetrics/VictoriaMetrics/lib/mergeset

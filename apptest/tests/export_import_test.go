@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleExportImportNative(t *testing.T) {

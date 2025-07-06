@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // TestSingleSpecialQueryRegression is used to test queries that have experienced issues for specific data sets.

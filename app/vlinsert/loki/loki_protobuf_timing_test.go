@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/insertutil"
 )
 
 func BenchmarkParseProtobufRequest(b *testing.B) {

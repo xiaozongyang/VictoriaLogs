@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 type outputMode int

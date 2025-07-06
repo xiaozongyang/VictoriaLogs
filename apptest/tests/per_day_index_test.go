@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleSearchWithDisabledPerDayIndex(t *testing.T) {

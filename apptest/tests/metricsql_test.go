@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
+	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
-	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func millis(s string) int64 {

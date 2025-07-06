@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/decimal"
 	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestSingleDeduplication_dedulicationIsOff(t *testing.T) {

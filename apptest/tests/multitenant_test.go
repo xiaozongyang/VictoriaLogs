@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 func TestClusterMultiTenantSelect(t *testing.T) {

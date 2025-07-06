@@ -5,7 +5,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // See: https://docs.victoriametrics.com/victoriametrics/cluster-victoriametrics/#multi-level-cluster-setup

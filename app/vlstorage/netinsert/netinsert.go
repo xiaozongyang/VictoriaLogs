@@ -10,17 +10,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/valyala/fastrand"
-
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/contextutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding/zstd"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httputil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool"
+	"github.com/valyala/fastrand"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 // the maximum size of a single data block sent to storage node.

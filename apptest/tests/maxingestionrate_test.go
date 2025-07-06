@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // Data used in tests

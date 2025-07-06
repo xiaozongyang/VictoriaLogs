@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/datadog"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/elasticsearch"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/internalinsert"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/journald"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/jsonline"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/loki"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/opentelemetry"
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/syslog"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/httpserver"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/datadog"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/elasticsearch"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/internalinsert"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/journald"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/jsonline"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/loki"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/opentelemetry"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/syslog"
 )
 
 var (

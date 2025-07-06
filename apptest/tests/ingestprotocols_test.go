@@ -4,12 +4,12 @@ import (
 	"os"
 	"testing"
 
+	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
-	pb "github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 func TestSingleIngestionProtocols(t *testing.T) {

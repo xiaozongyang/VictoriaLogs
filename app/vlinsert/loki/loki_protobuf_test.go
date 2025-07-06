@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/app/vlinsert/insertutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage"
+	"github.com/VictoriaMetrics/VictoriaLogs/app/vlinsert/insertutil"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 type testLogMessageProcessor struct {

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/apptest"
-	at "github.com/VictoriaMetrics/VictoriaMetrics/apptest"
+	"github.com/VictoriaMetrics/VictoriaLogs/apptest"
+	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // TestSingleVMAgentReloadConfigs verifies that vmagent reload new configurations on SIGHUP signal
