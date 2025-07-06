@@ -36,7 +36,7 @@ Bumping the limits may significantly improve build speed.
 1. Make sure all the changes are documented in [CHANGELOG.md](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/docs/victorialogs/CHANGELOG.md).
    Ideally, every change must be documented in the commit with the change. Alternatively, the change must be documented immediately
    after the commit, which adds the change.
-1. Run `make vmui-logs-update` command to re-build static files for the [built-in Web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui)
+1. Run `make vmui-update` command to re-build static files for the [built-in Web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui)
    and commit the changes to the VictoriaLogs repository.
 1. Run `PKG_TAG=v1.xx.y make docs-update-version` command to update version help tooltips
    according to [the contribution guide](https://docs.victoriametrics.com/victoriametrics/contributing/#pull-request-checklist).
@@ -56,6 +56,13 @@ Bumping the limits may significantly improve build speed.
       * linux/386
       This step can be run manually with the command `make publish` from the needed git tag.
 
+1. Run `TAG=v1.xx.y make publish-latest` for publishing the `latest` tag for Docker images, which equals to the given `TAG`.
+1. Push the tag `v1.xx.y` created at the previous steps to public GitHub repository at https://github.com/VictoriaMetrics/VictoriaLogs :
+
+   ```shell
+   git push origin v1.xx.y
+   ```
+
 1. Run `TAG=v1.xx.y make github-create-release github-upload-assets`. This command performs the following tasks:
 
    - a) Create draft GitHub release with the name `TAG`. This step can be run manually
@@ -74,13 +81,7 @@ Bumping the limits may significantly improve build speed.
 
 1. Go to <https://github.com/VictoriaMetrics/VictoriaLogs/releases> and verify that draft release with the name `TAG` has been created
    and this release contains all the needed binaries and checksums.
-1. Update the release description with the content of [CHANGELOG](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/docs/victorialogs/CHANGELOG.md) for this release.
-1. Push the tag `v1.xx.y` created at previous steps to public GitHub repository at https://github.com/VictoriaMetrics/VictoriaLogs:
-
-   ```shell
-   git push origin v1.xx.y
-   ```
-
+1. Update the release description with the contents of [CHANGELOG](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/docs/victorialogs/CHANGELOG.md) for this release.
 1. Publish release by pressing "Publish release" green button in GitHub's UI.
 1. Update GitHub issues related to the new release - they are mentioned in the [CHANGELOG](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/docs/victorialogs/CHANGELOG.md).
    Put human-readable description on how the issue has been addressed and which particular release contains the change.
