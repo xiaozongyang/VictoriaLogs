@@ -2,13 +2,11 @@
 
 ## Supported Versions
 
-The following versions of VictoriaMetrics receive regular security fixes:
+The following versions of VictoriaLogs receive regular security fixes:
 
 | Version | Supported          |
 |---------|--------------------|
-| [latest release](https://docs.victoriametrics.com/victoriametrics/changelog/) | :white_check_mark: |
-| v1.102.x [LTS line](https://docs.victoriametrics.com/victoriametrics/lts-releases/) | :white_check_mark: |
-| v1.110.x [LTS line](https://docs.victoriametrics.com/victoriametrics/lts-releases/) | :white_check_mark: |
+| [latest release](https://docs.victoriametrics.com/victorialogs/changelog/) | :white_check_mark: |
 | other releases  | :x:                |
 
 See [this page](https://victoriametrics.com/security/) for more details.
