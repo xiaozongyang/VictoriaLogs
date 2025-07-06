@@ -15,19 +15,12 @@ import (
 
 // Regular expressions for runtime information to extract from the app logs.
 var (
-	storageDataPathRE           = regexp.MustCompile(`successfully opened storage "(.*)"`)
-	httpListenAddrRE            = regexp.MustCompile(`started server at http://(.*:\d{1,5})/`)
-	graphiteListenAddrRE        = regexp.MustCompile(`started TCP Graphite server at "(.*:\d{1,5})"`)
-	openTSDBListenAddrRE        = regexp.MustCompile(`started TCP OpenTSDB collector at "(.*:\d{1,5})"`)
-	vminsertAddrRE              = regexp.MustCompile(`accepting vminsert conns at (.*:\d{1,5})$`)
-	vminsertClusterNativeAddrRE = regexp.MustCompile(`started TCP clusternative server at "(.*:\d{1,5})"`)
-	vmselectAddrRE              = regexp.MustCompile(`accepting vmselect conns at (.*:\d{1,5})$`)
+	httpListenAddrRE = regexp.MustCompile(`started server at http://(.*:\d{1,5})/`)
 
 	logsStorageDataPathRE = regexp.MustCompile(`opening storage at -storageDataPath=(.*)`)
 )
 
-// app represents an instance of some VictoriaMetrics server (such as vmstorage,
-// vminsert, or vmselect).
+// app represents an instance of some VictoriaLogs server (such as vlsingle or vlagent).
 type app struct {
 	instance string
 	binary   string

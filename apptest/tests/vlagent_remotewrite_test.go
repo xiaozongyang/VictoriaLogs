@@ -10,9 +10,9 @@ import (
 	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
-// TestSingleVlagentRemoteWrite performs tests for remote write data ingestion
+// TestVlagentRemoteWrite performs tests for remote write data ingestion
 // by vlagent application
-func TestSingleVlagentRemoteWrite(t *testing.T) {
+func TestVlagentRemoteWrite(t *testing.T) {
 	os.RemoveAll(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
@@ -66,7 +66,7 @@ func TestSingleVlagentRemoteWrite(t *testing.T) {
 	assertLogsQLResponseEqual(t, got, &at.LogsQLQueryResponse{LogLines: wantLogLines})
 }
 
-func TestSingleVlagentRemoteWriteReplication(t *testing.T) {
+func TestVlagentRemoteWriteReplication(t *testing.T) {
 	os.RemoveAll(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
