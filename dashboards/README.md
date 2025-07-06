@@ -1,6 +1,6 @@
-# VictoriaMetrics dashboards
+# VictoriaLogs dashboards
 
-The directory contains the official list of Grafana dashboards for VictoriaMetrics components.
+The directory contains the official list of Grafana dashboards for VictoriaLogs components.
 The `vm` folder contains copies of the listed dashboards but alternated to use 
 [VictoriaMetrics datasource](https://github.com/VictoriaMetrics/victoriametrics-datasource).
 
