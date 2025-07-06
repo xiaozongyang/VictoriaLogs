@@ -10,8 +10,9 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prefixfilter"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
 )
 
 // LogRows holds a set of rows needed for Storage.MustAddRows

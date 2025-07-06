@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/contextutil"
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prefixfilter"
+
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
 )
 
 // pipeUnion processes '| union ...' pipe.

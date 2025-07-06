@@ -3,7 +3,7 @@ package logstorage
 import (
 	"strconv"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/prefixfilter"
+	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
 )
 
 type statsRateSum struct {
