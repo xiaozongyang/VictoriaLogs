@@ -82,5 +82,5 @@ See also:
 - [HTTP query args and HTTP headers, which can be set during data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/#http-parameters)
 - [Data ingestion troubleshooting](https://docs.victoriametrics.com/victorialogs/data-ingestion/#troubleshooting)
 - [How to query VictoriaLogs](https://docs.victoriametrics.com/victorialogs/querying/)
-- [Docker-compose demo for Datadog integration with VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/datadog-agent)
-- [Docker-compose demo for Datadog Serverless integration with VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/datadog-serverless)
+- [Docker-compose demo for Datadog integration with VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/datadog-agent)
+- [Docker-compose demo for Datadog Serverless integration with VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/datadog-serverless)

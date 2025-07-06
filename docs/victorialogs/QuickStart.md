@@ -30,14 +30,14 @@ There are the following options exist:
 
 ### Pre-built binaries
 
-Pre-built binaries for VictoriaLogs are available at the [releases](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/) page.
+Pre-built binaries for VictoriaLogs are available at the [releases](https://github.com/VictoriaMetrics/VictoriaLogs/releases/) page.
 Just download archive for the needed Operating system and architecture, unpack it and run `victoria-logs-prod` from it.
 
 For example, the following commands download VictoriaLogs archive for Linux/amd64, unpack and run it:
 
 ```sh
-curl -L -O https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.24.0-victorialogs/victoria-logs-linux-amd64-v1.24.0-victorialogs.tar.gz
-tar xzf victoria-logs-linux-amd64-v1.24.0-victorialogs.tar.gz
+curl -L -O https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/v1.25.0/victoria-logs-linux-amd64-v1.25.0.tar.gz
+tar xzf victoria-logs-linux-amd64-v1.25.0.tar.gz
 ./victoria-logs-prod -storageDataPath=victoria-logs-data
 ```
 
@@ -83,8 +83,8 @@ Follow the following steps in order to build VictoriaLogs from source code:
 - Checkout VictoriaLogs source code. It is located in the VictoriaMetrics repository:
 
   ```sh
-  git clone https://github.com/VictoriaMetrics/VictoriaMetrics
-  cd VictoriaMetrics
+  git clone https://github.com/VictoriaMetrics/VictoriaLogs
+  cd VictoriaLogs
   ```
 
 - Build VictoriaLogs. The build command requires [Go 1.22](https://golang.org/doc/install).
@@ -142,15 +142,15 @@ See also:
 ## Docker demos
 
 Docker-compose demos for single-node and cluster version of VictoriaLogs that include logs collection,
-monitoring, alerting and Grafana are available [here](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker#readme).
+monitoring, alerting and Grafana are available [here](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker#readme).
 
 Docker-compose demos that integrate VictoriaLogs and various log collectors:
 
-- [Filebeat demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/filebeat)
-- [Fluentbit demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/fluentbit)
-- [Logstash demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/logstash)
-- [Vector demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/vector)
-- [Promtail demo](https://github.com/VictoriaMetrics/VictoriaMetrics/tree/master/deployment/docker/victorialogs/promtail)
+- [Filebeat demo](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/filebeat)
+- [Fluentbit demo](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/fluentbit)
+- [Logstash demo](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/logstash)
+- [Vector demo](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/vector)
+- [Promtail demo](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/promtail)
 
 You can use [VictoriaLogs single](https://docs.victoriametrics.com/helm/victorialogs-single/)
 or [cluster](https://docs.victoriametrics.com/helm/victorialogs-cluster) helm charts as a demo for running Vector 

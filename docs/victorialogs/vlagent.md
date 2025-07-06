@@ -34,7 +34,7 @@ Previous solution was to configure clients to replicate log streams into multipl
 
 ## Quick Start
 
-Please download `vlagent` archive from [releases page](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/latest) (
+Please download and unpack `vlutils` archive from [releases page](https://github.com/VictoriaMetrics/VictoriaLogs/releases/latest) (
 `vlagent` is also available in docker images [Docker Hub](https://hub.docker.com/r/victoriametrics/vlagent/tags) and [Quay](https://quay.io/repository/victoriametrics/vlagent?tab=tags)),
 unpack it and pass the following flags to the `vlagent` binary in order to start sending the data to the VictoriaLogs remote storage:
 
@@ -63,7 +63,7 @@ and then it sends the buffered data to the remote storage in order to prevent da
 We recommend setting up regular scraping of this page either through `vmagent` or by Prometheus-compatible scraper,
 so that the exported metrics may be analyzed later.
 
-Use official [Grafana dashboard](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/dashboards/vlagent.json) for `vlagent` state overview.
+Use official [Grafana dashboard](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/dashboards/vlagent.json) for `vlagent` state overview.
 Graphs on this dashboard contain useful hints - hover the `i` icon at the top left corner of each graph in order to read it.
 If you have suggestions for improvements or have found a bug - please open an issue on github or add a review to the dashboard.
 

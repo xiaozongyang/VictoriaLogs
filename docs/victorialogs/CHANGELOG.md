@@ -13,10 +13,16 @@ aliases:
 - /victorialogs/CHANGELOG.html
 ---
 
-The following `tip` changes can be tested by building VictoriaLogs from the latest commit of [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics/) repository
+The following `tip` changes can be tested by building VictoriaLogs from the latest commit of [VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaLogs/) repository
 according to [these docs](https://docs.victoriametrics.com/victorialogs/quickstart/#building-from-source-code)
 
 ## tip
+
+## [v1.25.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.25.0)
+
+Released at 2025-07-07
+
+**VictoriaLogs source code has been moved from [VictoriaMetrics repository](https://github.com/VictoriaMetrics/VictoriaMetrics/) to its own [github.com/VictoriaMetrics/VictoriaLogs](https://github.com/VictoriaMetrics/VictoriaLogs/) repository. All the future development will be performed in the new repository. The `-victorialogs` suffix is removed from the release tag and from docker image tags starting from v1.25.0 release**
 
 * FEATURE: [`format` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#format-pipe): add support for Unix timestamps in seconds, milliseconds and microseconds additionally to nanoseconds when using `<time:field_name>` formatting. See [this issue](https://github.com/VictoriaMetrics/VictoriaMetrics/issues/8659).
 
