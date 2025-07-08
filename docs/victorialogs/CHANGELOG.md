@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* BUGFIX: properly return VictoriaLogs version at `./victoria-logs -version` and at the `vm_app_version` metric exposed via [`/metrics` page](https://docs.victoriametrics.com/victorialogs/#monitoring). See [#409](https://github.com/VictoriaMetrics/VictoriaLogs/issues/409).
+
 ## [v1.25.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.25.0)
 
 Released at 2025-07-07
