@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useMemo, useCallback } from "preact/compat";
+import React, { FC, useState, useEffect, useMemo, useCallback } from "preact/compat";
 import Autocomplete from "../../Main/Autocomplete/Autocomplete";
 import { useFetchQueryOptions } from "../../../hooks/useFetchQueryOptions";
 import useGetMetricsQL from "../../../hooks/useGetMetricsQL";
@@ -14,8 +14,7 @@ const QueryEditorAutocomplete: FC<QueryEditorAutocompleteProps> = ({
   hasHelperText,
   includeFunctions,
   onSelect,
-  onFoundOptions,
-  isOpen
+  onFoundOptions
 }) => {
   const [offsetPos, setOffsetPos] = useState({ top: 0, left: 0 });
   const metricsqlFunctions = useGetMetricsQL(includeFunctions);
@@ -144,10 +143,6 @@ const QueryEditorAutocomplete: FC<QueryEditorAutocompleteProps> = ({
     span.remove();
     marker.remove();
   }, [anchorEl, caretPosition, hasHelperText]);
-
-  if (!isOpen) {
-    return;
-  }
 
   return (
     <>
