@@ -15,7 +15,7 @@ linters:
     rules:
       - linters:
           - staticcheck
-        text: 'SA(4003|1019|5011)|QF1001'
+        text: '(SA(4003|1019|5011)|QF1001):'
     paths:
       - third_party$
       - builtin$
