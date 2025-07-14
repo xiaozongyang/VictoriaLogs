@@ -130,7 +130,7 @@ Once updated, run the following commands:
 
 1. Commit and push changes to `master`.
 1. Run "Release" action on Github.
-1. Merge new PRs *"Automatic update CHANGELOGs and READMEs"* and *"Synchronize docs"* after pipelines are complete.
+1. Merge new PR *"Automatic update CHANGELOGs and READMEs"* after pipelines are complete.
 
 ## Ansible Roles
 
