@@ -5,7 +5,7 @@ import { ViewProps } from "../../types";
 import EmptyLogs from "../components/EmptyLogs/EmptyLogs";
 import JsonViewSettings from "./JsonViewSettings/JsonViewSettings";
 import { useSearchParams } from "react-router-dom";
-import orderBy from "lodash.orderBy";
+import orderby from "lodash.orderby";
 import "./style.scss";
 import { Logs } from "../../../../../api/types";
 import { SortDirection } from "./types";
@@ -45,7 +45,7 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
 
   const sortedData = useMemo(() => {
     if (!sortField || !sortDirection) return orderedFieldsData;
-    return orderBy(orderedFieldsData, [sortField], [sortDirection]);
+    return orderby(orderedFieldsData, [sortField], [sortDirection]);
   }, [orderedFieldsData, sortField, sortDirection]);
 
   const renderSettings = () => {
