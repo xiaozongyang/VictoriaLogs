@@ -80,14 +80,14 @@ or [cluster](https://docs.victoriametrics.com/helm/victorialogs-cluster) helm ch
 
 Follow the following steps in order to build VictoriaLogs from source code:
 
-- Checkout VictoriaLogs source code. It is located in the VictoriaMetrics repository:
+- Checkout VictoriaLogs source code:
 
   ```sh
   git clone https://github.com/VictoriaMetrics/VictoriaLogs
   cd VictoriaLogs
   ```
 
-- Build VictoriaLogs. The build command requires [Go 1.22](https://golang.org/doc/install).
+- Build VictoriaLogs:
 
   ```sh
   make victoria-logs
