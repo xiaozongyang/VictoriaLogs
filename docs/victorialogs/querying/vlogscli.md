@@ -279,3 +279,28 @@ The list of command-line flags with their descriptions is available by running `
   -version
     	Show VictoriaMetrics version
 ```
+
+### Building from source code
+
+Follow these steps in order to build `vlogscli` from source code:
+
+- Checkout VictoriaLogs source code:
+
+  ```sh
+  git clone https://github.com/VictoriaMetrics/VictoriaLogs
+  cd VictoriaLogs
+  ```
+
+- Build `vlogscli`:
+
+  ```sh
+  make vlogscli
+  ```
+
+- Run the built binary:
+
+  ```sh
+  bin/vlogscli -datasource.url=http://victoria-logs-host:9428/select/logsql/query
+  ```
+
+Replace `victoria-los-host:9428` with the needed hostname of the VictoriaLogs to query.
