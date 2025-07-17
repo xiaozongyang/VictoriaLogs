@@ -3,13 +3,11 @@ name: main-vmui
 on:
   push:
     branches:
-      - cluster
       - master
     paths:
       - 'app/vmui/packages/vmui/**'
   pull_request:
     branches:
-      - cluster
       - master
     paths:
       - 'app/vmui/packages/vmui/**'
