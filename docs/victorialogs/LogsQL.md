@@ -4288,9 +4288,9 @@ _time:5m host:"api-" | count()
 _time:5m "database" | count()
 ```
 
-The [`_time` filter](#time-filter) is the essential one - if it is missing, then VictoriaLogs literlly scans all the logs stored in the database.
-The `_time` filter allows reducing the amounts of logs to scan to the given time range. Note that [Web UI for VictoriaLogs](https://docs.victoriametrics.com/victorialogs/querying/#web-ui)
-and [Grafana plugin for VictoriaLogs](https://docs.victoriametrics.com/victorialogs/victorialogs-datasource/) automatically set the `_time` filter to the selected time range,
+The [`_time` filter](#time-filter) is the essential one - if it is missing, then VictoriaLogs literally scans all the logs stored in the database.
+The `_time` filter allows reducing the amounts of logs to scan to the given time range only. Note that [Web UI for VictoriaLogs](https://docs.victoriametrics.com/victorialogs/querying/#web-ui)
+and [Grafana plugin for VictoriaLogs](https://docs.victoriametrics.com/victorialogs/victorialogs-datasource/) automatically set the `_time` filter to the actually selected time range,
 so there is no need in specifying it manually in the query.
 
 ### Test stream filters in the query
