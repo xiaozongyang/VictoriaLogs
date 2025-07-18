@@ -23,7 +23,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 * FEATURE: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): improve autocomplete functionality with enhanced quick autocomplete via hotkey support and removed special characters from autocomplete suggestions. See [this comment](https://github.com/VictoriaMetrics/VictoriaLogs/issues/70#issuecomment-3043591443) for details.
 
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): prevent groups from automatically expanding on list updates if all groups were previously collapsed. See [#92](https://github.com/VictoriaMetrics/VictoriaLogs/issues/92).
-* BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): restore logging of too long ingested lines in order to simplify debugging of such cases. See [#430](https://github.com/VictoriaMetrics/VictoriaLogs/issues/430).
+* BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): restore logging of too long ingested lines in order to simplify debugging of such cases. See [#430](https://github.com/VictoriaMetrics/VictoriaLogs/issues/430). The regression has been introduced in [v1.24.0-victorialogs](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.24.0-victorialogs).
 
 ## [v1.25.1](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.25.1)
 
