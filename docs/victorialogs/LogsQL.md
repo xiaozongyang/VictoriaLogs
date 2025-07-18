@@ -4240,7 +4240,7 @@ Always **be specific** when you build your queries.
 
 Use these steps to help you understand your query and improve its speed.
 
-### Check how many log your query matches
+### Check how many logs your query matches
 
 You can do this by putting the [`| count()`](#count-stats) after every filter or pipe that might change the number of rows.
 
@@ -4267,7 +4267,7 @@ executing [_time:5m level:error database host:"api-" | stats count(*) as "count(
 }
 ```
 
-So the given filters match 19.217.008 logs and the matching takes 0.474 seconds.
+So the given filters match 19,217,008 logs and the matching takes 0.474 seconds.
 
 If the execution time is high, try reordering your filters. Put the most selective and cheapest conditions first.
 Filters run one after another, so an early filter that removes a lot of logs will make later filters faster to run.
