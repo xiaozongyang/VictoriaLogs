@@ -8,8 +8,10 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil"
 )
 
 // LineReader reads newline-delimited lines from the underlying reader
@@ -102,9 +104,10 @@ func (lr *LineReader) readMoreData() bool {
 
 	bufLen := len(lr.buf)
 	if bufLen >= MaxLineSizeBytes.IntN() {
+		lineSnippet := stringsutil.LimitStringLen(bytesutil.ToUnsafeString(lr.buf), 1024)
 		ok, skippedBytes := lr.skipUntilNextLine()
-		logger.Warnf("%s: the line length exceeds -insert.maxLineSizeBytes=%d; skipping it; total skipped bytes=%d",
-			lr.name, MaxLineSizeBytes.IntN(), skippedBytes)
+		logger.Warnf("%s: the line length exceeds -insert.maxLineSizeBytes=%d; skipping it; total skipped bytes=%d; the line snippet=%q",
+			lr.name, MaxLineSizeBytes.IntN(), skippedBytes, lineSnippet)
 		tooLongLinesSkipped.Inc()
 		return ok
 	}
