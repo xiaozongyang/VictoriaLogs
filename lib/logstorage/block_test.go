@@ -222,7 +222,7 @@ func TestBlockUncompressedSizeBytes(t *testing.T) {
 				if f.Value == "" {
 					continue // skip empty values
 				}
-				key := getRawFieldName(f.Name)
+				key := getCanonicalColumnName(f.Name)
 				m[key] = f.Value
 			}
 

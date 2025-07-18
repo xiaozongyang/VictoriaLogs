@@ -56,14 +56,14 @@ func (b *block) uncompressedSizeBytes() int {
 	// size of constant fields (included in every row)
 	for i := range b.constColumns {
 		cc := &b.constColumns[i]
-		name := getRawFieldName(cc.Name)
+		name := getCanonicalColumnName(cc.Name)
 		totalSize += estimatedJSONFieldLen(name, cc.Value) * rowsCount
 	}
 
 	// add size of variable fields
 	for i := range b.columns {
 		c := &b.columns[i]
-		name := getRawFieldName(c.name)
+		name := getCanonicalColumnName(c.name)
 
 		for _, v := range c.values {
 			// VictoriaLogs data model (https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)

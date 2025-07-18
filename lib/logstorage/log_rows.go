@@ -512,7 +512,7 @@ func getCanonicalFieldName(fieldName string) string {
 	return fieldName
 }
 
-func getRawFieldName(fieldName string) string {
+func getCanonicalColumnName(fieldName string) string {
 	if fieldName == "" {
 		return "_msg"
 	}
@@ -630,7 +630,7 @@ func EstimatedJSONRowLen(fields []Field) int {
 			continue
 		}
 
-		name := getRawFieldName(f.Name)
+		name := getCanonicalColumnName(f.Name)
 		n += estimatedJSONFieldLen(name, f.Value)
 	}
 	return n
