@@ -138,8 +138,9 @@ func (mp *inmemoryPart) MustStoreToDisk(path string) {
 
 	mp.ph.mustWriteMetadata(path)
 
-	fs.MustSyncPath(path)
-	// Do not sync parent directory - it must be synced by the caller.
+	// Sync the path contents and the path parent dir in order to guarantee
+	// all the path contents is visible in case of unclean shutdown.
+	fs.MustSyncPathAndParentDir(path)
 }
 
 // tmpRows is used as a helper for inmemoryPart.mustInitFromRows()
