@@ -104,7 +104,7 @@ func (lr *LineReader) readMoreData() bool {
 
 	bufLen := len(lr.buf)
 	if bufLen >= MaxLineSizeBytes.IntN() {
-		lineSnippet := stringsutil.LimitStringLen(bytesutil.ToUnsafeString(lr.buf), 1024)
+		lineSnippet := stringsutil.LimitStringLen(string(lr.buf), 1024)
 		ok, skippedBytes := lr.skipUntilNextLine()
 		logger.Warnf("%s: the line length exceeds -insert.maxLineSizeBytes=%d; skipping it; total skipped bytes=%d; the line snippet=%q",
 			lr.name, MaxLineSizeBytes.IntN(), skippedBytes, lineSnippet)
