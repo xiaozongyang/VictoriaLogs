@@ -518,6 +518,11 @@ func (ddb *datadb) mustMergeParts(pws []*partWrapper, isFinal bool) {
 		// Fast path: flush a single in-memory part to disk.
 		mp := pws[0].mp
 		mp.MustStoreToDisk(dstPartPath)
+		// The new part directory has been fully synced by MustStoreToDisk.
+		// Explicitly sync the parent datadb directory as well, so that the
+		// directory entry linking the new part becomes crash-safe *before*
+		// parts.json is updated.
+		fs.MustSyncPath(ddb.path)
 		pwNew := ddb.openCreatedPart(&mp.ph, pws, nil, dstPartPath)
 		ddb.swapSrcWithDstParts(pws, pwNew, dstPartType)
 		return
@@ -564,8 +569,10 @@ func (ddb *datadb) mustMergeParts(pws []*partWrapper, isFinal bool) {
 		mpNew.ph = ph
 	} else {
 		ph.mustWriteMetadata(dstPartPath)
-		// Make sure the created part directory listing is synced.
+		// Ensure the contents of the created part directory are synced first,
+		// followed by syncing the parent directory entry to make it durable.
 		fs.MustSyncPath(dstPartPath)
+		fs.MustSyncPath(ddb.path)
 	}
 	if needStop(stopCh) {
 		// Remove incomplete destination part
