@@ -28,6 +28,8 @@ VictoriaLogs provides the following features:
 - It supports selecting surrounding logs in front and after the selected logs. See [these docs](https://docs.victoriametrics.com/victorialogs/logsql/#stream_context-pipe).
 - It supports alerting - see [these docs](https://docs.victoriametrics.com/victorialogs/vmalert/).
 
+See also [articles about VictoriaLogs](https://docs.victoriametrics.com/victorialogs/articles/).
+
 If you have questions about VictoriaLogs, then read [this FAQ](https://docs.victoriametrics.com/victorialogs/faq/).
 Also feel free asking any questions at [VictoriaMetrics community Slack chat](https://victoriametrics.slack.com/), 
 you can join it via [Slack Inviter](https://slack.victoriametrics.com/).
