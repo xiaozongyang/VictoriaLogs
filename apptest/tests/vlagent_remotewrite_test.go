@@ -7,13 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
+
 	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 )
 
 // TestVlagentRemoteWrite performs tests for remote write data ingestion
 // by vlagent application
 func TestVlagentRemoteWrite(t *testing.T) {
-	os.RemoveAll(t.Name())
+	fs.MustRemoveDir(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
 
@@ -67,7 +69,7 @@ func TestVlagentRemoteWrite(t *testing.T) {
 }
 
 func TestVlagentRemoteWriteReplication(t *testing.T) {
-	os.RemoveAll(t.Name())
+	fs.MustRemoveDir(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
 

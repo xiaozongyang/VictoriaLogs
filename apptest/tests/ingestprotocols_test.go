@@ -1,15 +1,16 @@
 package tests
 
 import (
-	"os"
 	"testing"
+
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
 
 	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
 func TestVlsingleIngestionProtocols(t *testing.T) {
-	os.RemoveAll(t.Name())
+	fs.MustRemoveDir(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
 	sut := tc.MustStartDefaultVlsingle()

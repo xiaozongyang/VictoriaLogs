@@ -836,7 +836,7 @@ func TestStorageRunQuery(t *testing.T) {
 
 	// Close the storage and delete its data
 	s.MustClose()
-	fs.MustRemoveAll(path)
+	fs.MustRemoveDir(path)
 }
 
 func mustParseQuery(query string) *Query {
@@ -1129,7 +1129,7 @@ func TestStorageSearch(t *testing.T) {
 	})
 
 	s.MustClose()
-	fs.MustRemoveAll(path)
+	fs.MustRemoveDir(path)
 }
 
 func TestParseStreamFieldsSuccess(t *testing.T) {

@@ -190,7 +190,7 @@ func testFilterMatchForColumns(t *testing.T, columns []column, f filter, neededC
 
 	// Close and delete the test storage
 	s.MustClose()
-	fs.MustRemoveAll(storagePath)
+	fs.MustRemoveDir(storagePath)
 }
 
 func testFilterMatchForStorage(t *testing.T, s *Storage, tenantID TenantID, f filter, neededColumnName string, expectedValues []string, expectedTimestamps []int64) {

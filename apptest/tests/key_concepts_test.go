@@ -2,11 +2,11 @@ package tests
 
 import (
 	"encoding/json"
-	"os"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
 	"github.com/google/go-cmp/cmp"
 
 	at "github.com/VictoriaMetrics/VictoriaLogs/apptest"
@@ -15,7 +15,7 @@ import (
 // TestVlsingleKeyConcepts verifies cases from https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model
 // for vl-single.
 func TestVlsingleKeyConcepts(t *testing.T) {
-	os.RemoveAll(t.Name())
+	fs.MustRemoveDir(t.Name())
 	tc := at.NewTestCase(t)
 	defer tc.Stop()
 	sut := tc.MustStartDefaultVlsingle()
