@@ -21,6 +21,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 * SECURITY: upgrade base docker image (Alpine) from 3.22.0 to 3.22.1. See [Alpine 3.22.1 release notes](https://www.alpinelinux.org/posts/Alpine-3.19.8-3.20.7-3.21.4-3.22.1-released.html).
 
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix broken "Collapse all" button in Group view. See [#509](https://github.com/VictoriaMetrics/VictoriaLogs/issues/509). The bug has been introduced in [v1.26.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.26.0).
+* BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): prevent from possible crash when ingesting logs for dates, which are concurrently removed because of [the configured retention](https://docs.victoriametrics.com/victorialogs/#retention). See [#505](https://github.com/VictoriaMetrics/VictoriaLogs/issues/505).
 
 ## [v1.26.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.26.0)
 
@@ -32,7 +33,7 @@ Released at 2025-07-18
 
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): prevent groups from automatically expanding on list updates if all groups were previously collapsed. See [#92](https://github.com/VictoriaMetrics/VictoriaLogs/issues/92).
 * BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): restore logging of too long ingested lines in order to simplify debugging of such cases. See [#430](https://github.com/VictoriaMetrics/VictoriaLogs/issues/430). The regression has been introduced in [v1.24.0-victorialogs](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.24.0-victorialogs).
-* BUGFIX: properly ppersist newly created data on unclean shutdown such as power off, hardware crash or operating system crash. See [#505](https://github.com/VictoriaMetrics/VictoriaLogs/issues/505).
+* BUGFIX: properly persist newly created data on unclean shutdown such as power off, hardware crash or operating system crash. See [#505](https://github.com/VictoriaMetrics/VictoriaLogs/issues/505).
 
 ## [v1.25.1](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.25.1)
 

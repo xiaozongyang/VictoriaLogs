@@ -115,7 +115,7 @@ type Storage struct {
 	//
 	// It must be accessed under partitionsLock.
 	//
-	// partitions are sorted by time.
+	// partitions are sorted by time, e.g. partitions[0] has the smallest time.
 	partitions []*partitionWrapper
 
 	// ptwHot is the "hot" partition, were the last rows were ingested.
@@ -143,10 +143,11 @@ type Storage struct {
 	// It reduces the load on persistent storage during querying by _stream:{...} filter.
 	filterStreamCache *cache
 
-	// minKeptDay is set ONLY after the disk-space watcher removes recent partitions.
-	// It marks the earliest day still kept; older days are rejected during ingestion
-	// to avoid re-creating partitions just purged for space.
-	minKeptDay atomic.Int64
+	// minRetentionDay is the minimum allowed day for logs' ingestion because of the configured retention.
+	// Older logs are rejected during data ingestion.
+	//
+	// minRetentionDay must be accessed under the partitionsLock.
+	minRetentionDay int64
 }
 
 type partitionWrapper struct {
@@ -369,26 +370,33 @@ func (s *Storage) watchRetention() {
 
 		// Delete outdated partitions.
 		// s.partitions are sorted by day, so the partitions, which can become outdated, are located at the beginning of the list
-		for _, ptw := range s.partitions {
-			if ptw.day >= minAllowedDay {
-				break
+		ptws := s.partitions
+		for i, ptw := range ptws {
+			if ptw.day < minAllowedDay {
+				continue
 			}
-			ptwsToDelete = append(ptwsToDelete, ptw)
-			if ptw == s.ptwHot {
+
+			// ptws are sorted by time, so just drop all the partitions until i.
+			ptwsToDelete = ptws[:i]
+			s.partitions = ptws[i:]
+			s.updateMinRetentionDayLocked(ptwsToDelete)
+
+			// Remove reference to deleted partitions from s.ptwHot
+			if slices.Contains(ptwsToDelete, s.ptwHot) {
 				s.ptwHot = nil
 			}
+
+			break
 		}
-		for i := range ptwsToDelete {
-			s.partitions[i] = nil
-		}
-		s.partitions = s.partitions[len(ptwsToDelete):]
 
 		s.partitionsLock.Unlock()
 
-		for _, ptw := range ptwsToDelete {
+		for i, ptw := range ptwsToDelete {
 			logger.Infof("the partition %s is scheduled to be deleted because it is outside the -retentionPeriod=%dd", ptw.pt.path, durationToDays(s.retention))
 			ptw.mustDrop.Store(true)
 			ptw.decRef()
+
+			ptwsToDelete[i] = nil
 		}
 
 		select {
@@ -405,6 +413,7 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 	defer ticker.Stop()
 	for {
 		s.partitionsLock.Lock()
+
 		var n uint64
 		ptws := s.partitions
 		var ptwsToDelete []*partitionWrapper
@@ -425,6 +434,7 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 			i++
 			ptwsToDelete = ptws[:i]
 			s.partitions = ptws[i:]
+			s.updateMinRetentionDayLocked(ptwsToDelete)
 
 			// Remove reference to deleted partitions from s.ptwHot
 			if slices.Contains(ptwsToDelete, s.ptwHot) {
@@ -433,12 +443,7 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 
 			break
 		}
-		// Update minKeptDay after deletions triggered by disk-space watcher.
-		if len(s.partitions) > 0 {
-			s.minKeptDay.Store(s.partitions[0].day)
-		} else {
-			s.minKeptDay.Store(0)
-		}
+
 		s.partitionsLock.Unlock()
 
 		for i, ptw := range ptwsToDelete {
@@ -455,6 +460,18 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 			return
 		case <-ticker.C:
 		}
+	}
+}
+
+func (s *Storage) updateMinRetentionDayLocked(ptwsToDelete []*partitionWrapper) {
+	if len(ptwsToDelete) == 0 {
+		// Nothing to update
+		return
+	}
+
+	minDay := ptwsToDelete[len(ptwsToDelete)-1].day + 1
+	if s.minRetentionDay < minDay {
+		s.minRetentionDay = minDay
 	}
 }
 
@@ -558,9 +575,6 @@ func (s *Storage) MustAddRows(lr *LogRows) {
 
 	// Slow path - rows cannot be added to the hot partition, so split rows among available partitions
 	minAllowedDay := s.getMinAllowedDay()
-	if d := s.minKeptDay.Load(); d > minAllowedDay {
-		minAllowedDay = d
-	}
 	maxAllowedDay := s.getMaxAllowedDay()
 	m := make(map[int64]*LogRows)
 	for i, ts := range lr.timestamps {
@@ -594,8 +608,15 @@ func (s *Storage) MustAddRows(lr *LogRows) {
 	}
 	for day, lrPart := range m {
 		ptw := s.getPartitionForDay(day)
-		ptw.pt.mustAddRows(lrPart)
-		ptw.decRef()
+		if ptw != nil {
+			ptw.pt.mustAddRows(lrPart)
+			ptw.decRef()
+		} else {
+			// the lrPart must contain at least a single row, so log it.
+			line := MarshalFieldsToJSON(nil, lrPart.rows[0])
+			tooSmallTimestampLogger.Warnf("skipping log entry with too small timestamp because of -retention.maxDiskSpaceUsageBytes=%d; log entry: %s",
+				s.maxDiskSpaceUsageBytes, line)
+		}
 		PutLogRows(lrPart)
 	}
 }
@@ -613,6 +634,10 @@ func (tf *TimeFormatter) String() string {
 	return t.Format(time.RFC3339Nano)
 }
 
+// getPartitionForDay returns the partition for the given day.
+//
+// It may return nil if the partition for the given day has been already dropped
+// because of the disk-size based retention.
 func (s *Storage) getPartitionForDay(day int64) *partitionWrapper {
 	s.partitionsLock.Lock()
 
@@ -630,6 +655,13 @@ func (s *Storage) getPartitionForDay(day int64) *partitionWrapper {
 	}
 	if ptw == nil {
 		// Missing partition for the given day. Create it.
+
+		if day < s.minRetentionDay {
+			// Cannot create the partition for the given day, since it has been already removed because of retention.
+			s.partitionsLock.Unlock()
+			return nil
+		}
+
 		fname := time.Unix(0, day*nsecsPerDay).UTC().Format(partitionNameFormat)
 		partitionPath := filepath.Join(s.path, partitionsDirname, fname)
 		mustCreatePartition(partitionPath)
