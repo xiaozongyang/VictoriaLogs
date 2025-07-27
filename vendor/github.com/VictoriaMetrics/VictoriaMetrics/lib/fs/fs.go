@@ -11,6 +11,7 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/filestream"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
@@ -27,25 +28,14 @@ func MustSyncPathAndParentDir(path string) {
 
 // MustSyncPath syncs contents of the given path.
 func MustSyncPath(path string) {
-	mustSyncPath(path)
-}
-
-// MustWriteStreamSync writes src contents to the file at path and then calls fsync on the created file.
-// The fsync guarantees that the written data survives hardware reset after successful call.
-//
-// This function may leave the file at the path in inconsistent state on app crash
-// in the middle of the write.
-// Use MustWriteAtomic if the file at the path must be either written in full
-// or not written at all on app crash in the middle of the write.
-func MustWriteStreamSync(path string, src io.WriterTo) {
-	f := filestream.MustCreate(path, false)
-	if _, err := src.WriteTo(f); err != nil {
-		f.MustClose()
-		// Do not call MustRemovePath(path), so the user could inspect
-		// the file contents during investigation of the issue.
-		logger.Panicf("FATAL: cannot write data to %q: %s", path, err)
+	if fsutil.IsFsyncDisabled() {
+		// Just check that the path exists
+		if !IsPathExist(path) {
+			logger.Panicf("FATAL: cannot fsync missing %q", path)
+		}
+		return
 	}
-	f.MustClose()
+	mustSyncPath(path)
 }
 
 // MustWriteSync writes data to the file at path and then calls fsync on the created file.
