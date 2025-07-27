@@ -84,9 +84,10 @@ func (w *bloomValuesWriter) totalBytesWritten() uint64 {
 	return w.bloom.bytesWritten + w.values.bytesWritten
 }
 
-func (w *bloomValuesWriter) MustClose() {
-	w.bloom.MustClose()
-	w.values.MustClose()
+func (w *bloomValuesWriter) appendWriteClosers(dst []filestream.WriteCloser) []filestream.WriteCloser {
+	dst = append(dst, w.bloom.w)
+	dst = append(dst, w.values.w)
+	return dst
 }
 
 type bloomValuesStreamWriter struct {
@@ -155,18 +156,22 @@ func (sw *streamWriters) totalBytesWritten() uint64 {
 }
 
 func (sw *streamWriters) MustClose() {
-	sw.columnNamesWriter.MustClose()
-	sw.columnIdxsWriter.MustClose()
-	sw.metaindexWriter.MustClose()
-	sw.indexWriter.MustClose()
-	sw.columnsHeaderIndexWriter.MustClose()
-	sw.columnsHeaderWriter.MustClose()
-	sw.timestampsWriter.MustClose()
-
-	sw.messageBloomValuesWriter.MustClose()
-	for i := range sw.bloomValuesShards {
-		sw.bloomValuesShards[i].MustClose()
+	wcs := []filestream.WriteCloser{
+		sw.columnNamesWriter.w,
+		sw.columnIdxsWriter.w,
+		sw.metaindexWriter.w,
+		sw.indexWriter.w,
+		sw.columnsHeaderIndexWriter.w,
+		sw.columnsHeaderWriter.w,
+		sw.timestampsWriter.w,
 	}
+
+	wcs = sw.messageBloomValuesWriter.appendWriteClosers(wcs)
+	for i := range sw.bloomValuesShards {
+		wcs = sw.bloomValuesShards[i].appendWriteClosers(wcs)
+	}
+
+	filestream.MustCloseWritersParallel(wcs)
 }
 
 func (sw *streamWriters) getBloomValuesWriterForColumnName(name string) *bloomValuesWriter {
