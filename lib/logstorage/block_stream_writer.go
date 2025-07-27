@@ -84,9 +84,9 @@ func (w *bloomValuesWriter) totalBytesWritten() uint64 {
 	return w.bloom.bytesWritten + w.values.bytesWritten
 }
 
-func (w *bloomValuesWriter) appendWriteClosers(dst []filestream.WriteCloser) []filestream.WriteCloser {
-	dst = append(dst, w.bloom.w)
-	dst = append(dst, w.values.w)
+func (w *bloomValuesWriter) appendClosers(dst []fs.MustCloser) []fs.MustCloser {
+	dst = append(dst, &w.bloom)
+	dst = append(dst, &w.values)
 	return dst
 }
 
@@ -156,22 +156,24 @@ func (sw *streamWriters) totalBytesWritten() uint64 {
 }
 
 func (sw *streamWriters) MustClose() {
-	wcs := []filestream.WriteCloser{
-		sw.columnNamesWriter.w,
-		sw.columnIdxsWriter.w,
-		sw.metaindexWriter.w,
-		sw.indexWriter.w,
-		sw.columnsHeaderIndexWriter.w,
-		sw.columnsHeaderWriter.w,
-		sw.timestampsWriter.w,
+	// Flush and close files in parallel in order to reduce the time needed for this operation
+	// on high-latency storage systems such as NFS or Ceph.
+	cs := []fs.MustCloser{
+		&sw.columnNamesWriter,
+		&sw.columnIdxsWriter,
+		&sw.metaindexWriter,
+		&sw.indexWriter,
+		&sw.columnsHeaderIndexWriter,
+		&sw.columnsHeaderWriter,
+		&sw.timestampsWriter,
 	}
 
-	wcs = sw.messageBloomValuesWriter.appendWriteClosers(wcs)
+	cs = sw.messageBloomValuesWriter.appendClosers(cs)
 	for i := range sw.bloomValuesShards {
-		wcs = sw.bloomValuesShards[i].appendWriteClosers(wcs)
+		cs = sw.bloomValuesShards[i].appendClosers(cs)
 	}
 
-	filestream.MustCloseWritersParallel(wcs)
+	fs.MustCloseParallel(cs)
 }
 
 func (sw *streamWriters) getBloomValuesWriterForColumnName(name string) *bloomValuesWriter {
