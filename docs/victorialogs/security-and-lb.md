@@ -49,13 +49,13 @@ Below is an example of a vmauth configuration that:
 
 ```yaml
 users:
-  - username: foo
-    password: bar
-    url_map:
-      - src_paths: ["/select/.*"]
-        url_prefix:
-          - http://victoria-logs-1:9428
-          - http://victoria-logs-2:9428
+- username: foo
+  password: bar
+  url_map:
+  - src_paths: ["/select/.*"]
+    url_prefix:
+    - http://victoria-logs-1:9428
+    - http://victoria-logs-2:9428
 ```
 
 `victoria-logs-1` and `victoria-logs-2` can be either two VictoriaLogs single-node instances with replicated data according to [these docs](https://docs.victoriametrics.com/victorialogs/#high-availability),
@@ -104,16 +104,16 @@ vmauth allows selecting different clusters depending on the request path. For ex
 
 ```yaml
 unauthorized_user:
-    url_map:
-      - src_paths: ["/cold/select/.*"]
-        url_prefix: http://victoria-logs-cold:9428
-        # drop /cold/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+  url_map:
+  - src_paths: ["/cold/select/.*"]
+    url_prefix: http://victoria-logs-cold:9428
+    # drop /cold/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 
-      - src_paths: ["/hot/select/.*"]
-        url_prefix: http://victoria-logs-hot:9428
-        # drop /hot/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+  - src_paths: ["/hot/select/.*"]
+    url_prefix: http://victoria-logs-hot:9428
+    # drop /hot/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 ```
 
 The configuration above enables proxying all requests that start with the path prefix `/cold/select/` to the backend at `http://victoria-logs-cold:9428`,
@@ -135,7 +135,7 @@ are proxied to the short-term VictoriaLogs instance or cluster.
 
 ```yaml
 unauthorized_user:
-- url_map:
+  url_map:
 
   # Proxy requests for the given tenant (AccountID=0) to long-term VictoriaLogs
   # and override the ProjectID with 0.
@@ -169,14 +169,14 @@ For example, the vmauth configuration below overrides tenant headers before prox
 
 ```yaml
 users:
-  - username: foo
-    password: bar
-    url_map:
-      - src_paths: ["/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
-        headers:
-          - "AccountID: 2"
-          - "ProjectID: 4"
+- username: foo
+  password: bar
+  url_map:
+  - src_paths: ["/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 2"
+    - "ProjectID: 4"
 ```
 
 If the user sets the `AccountID` or `ProjectID` headers themselves,
@@ -187,38 +187,38 @@ vmauth configuration might look like this:
 
 ```yaml
 users:
-  - username: foo
-    password: bar
-    url_map:
-      - src_paths: ["/my-account/kubernetes-logs/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 5"
-        # drop /my-account/kubernetes-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
+- username: foo
+  password: bar
+  url_map:
+  - src_paths: ["/my-account/kubernetes-logs/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 5"
+    # drop /my-account/kubernetes-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
 
-      - src_paths: ["/my-account/mobile-logs/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 6"
-        # drop /my-account/mobile-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
+  - src_paths: ["/my-account/mobile-logs/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 6"
+    # drop /my-account/mobile-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
 
-      - src_paths: ["/my-account/frontend-logs/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 7"
-        # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
+  - src_paths: ["/my-account/frontend-logs/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 7"
+    # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
 
-  - username: admin
-    password: secret
-    url_map:
-      - src_paths: ["/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
+- username: admin
+  password: secret
+  url_map:
+  - src_paths: ["/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
 ```
 
 This configuration allows user `foo` to access 3 different tenants, and user `admin` to access all tenants.
@@ -234,15 +234,15 @@ For example, the following configuration allows user `my-account-admin` to have 
 
 ```yaml
 users:
-  - username: my-account-admin
-    password: foobar
-    url_map:
-      - src_paths: ["/my-account/select/.*"]
-        url_prefix: "http://victoria-logs:9428"
-        headers:
-          - "AccountID: 1"
-        # drop /my-account/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+- username: my-account-admin
+  password: foobar
+  url_map:
+  - src_paths: ["/my-account/select/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 1"
+    # drop /my-account/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 ```
 
 To allow unauthenticated access to a specific tenant, define the `unauthorized_user` as shown below:
@@ -250,13 +250,13 @@ To allow unauthenticated access to a specific tenant, define the `unauthorized_u
 ```yaml
 unauthorized_user:
   url_map:
-    - src_paths: ["/my-account/frontend-logs/.*"]
-      url_prefix: "http://victoria-logs:9428"
-      headers:
-        - "AccountID: 1"
-        - "ProjectID: 7"
-      # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
-      drop_src_path_prefix_parts: 2
+  - src_paths: ["/my-account/frontend-logs/.*"]
+    url_prefix: "http://victoria-logs:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 7"
+    # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
 ```
 
 This will grant all users access to logs for the specified tenant without additional authentication.
@@ -272,13 +272,13 @@ If you want to hide a subset of data within a tenant, use the HTTP query paramet
 
 ```yaml
 users:
-  - username: foo
-    password: bar
-    url_map:
-      - src_paths: ["/select/.*"]
-        url_prefix:
-        - http://victoria-logs-1:9428?extra_filters=password:''
-        - http://victoria-logs-2:9428?extra_filters=password:''
+- username: foo
+  password: bar
+  url_map:
+  - src_paths: ["/select/.*"]
+    url_prefix:
+    - http://victoria-logs-1:9428?extra_filters=password:''
+    - http://victoria-logs-2:9428?extra_filters=password:''
 ```
 
 With this configuration, vmauth will add the [empty filter](https://docs.victoriametrics.com/victorialogs/logsql/#empty-value-filter)
@@ -291,29 +291,29 @@ to each request based on the request path, and routes `/audit-logs` to a separat
 
 ```yaml
 users:
-  - username: frontend-logs-viewer
-    password: secret
-    url_map:
-      - src_paths: ["/frontend-logs/select/.*"]
-        url_prefix: http://victoria-logs:9428?extra_stream_filters=_stream%3A%7Bservice%3Dfrontend-logs%7D
-        # drop /frontend-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+- username: frontend-logs-viewer
+  password: secret
+  url_map:
+  - src_paths: ["/frontend-logs/select/.*"]
+    url_prefix: http://victoria-logs:9428?extra_stream_filters=_stream%3A%7Bservice%3Dfrontend-logs%7D
+    # drop /frontend-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 
-  - username: mobile-logs-viewer
-    password: secret
-    url_map:
-      - src_paths: ["/mobile-logs/select/.*"]
-        url_prefix: http://victoria-logs:9428?extra_stream_filters=_stream%3A%7Bservice%3Dmobile-logs%7D
-        # drop /mobile-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+- username: mobile-logs-viewer
+  password: secret
+  url_map:
+  - src_paths: ["/mobile-logs/select/.*"]
+    url_prefix: http://victoria-logs:9428?extra_stream_filters=_stream%3A%7Bservice%3Dmobile-logs%7D
+    # drop /mobile-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 
-  - username: audit-logs-viewer
-    password: secret
-    url_map:
-      - src_paths: ["/audit-logs/select/.*"]
-        url_prefix: http://victoria-logs-audit:9428
-        # drop /audit-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
+- username: audit-logs-viewer
+  password: secret
+  url_map:
+  - src_paths: ["/audit-logs/select/.*"]
+    url_prefix: http://victoria-logs-audit:9428
+    # drop /audit-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
 ```
 
 `extra_filters` and `extra_stream_filters` must be encoded using [percent encoding](https://en.wikipedia.org/wiki/Percent-encoding).
@@ -334,14 +334,14 @@ with Basic auth authentication and distributes load between `vlinsert` nodes in 
 
 ```yaml
 users:
-  - username: foo
-    password: bar
-    url_map:
-      - src_paths: ["/insert/.*"]
-        url_prefix:
-        - "http://vlinsert-1:9428"
-        - "http://vlinsert-2:9428"
-        - "http://vlinsert-3:9428"
+- username: foo
+  password: bar
+  url_map:
+  - src_paths: ["/insert/.*"]
+    url_prefix:
+    - "http://vlinsert-1:9428"
+    - "http://vlinsert-2:9428"
+    - "http://vlinsert-3:9428"
 ```
 
 Note that vmauth cannot replicate data to multiple destinations - it spreads incoming requests among the configured backends.
@@ -373,45 +373,45 @@ with Basic auth authentication and distributes load between the configured `vlin
 
 ```yaml
 users:
-  - username: kubernetes
-    password: secret
-    url_map:
-      - src_paths: ["/my-account/kubernetes-logs/insert/.*"]
-        url_prefix:
-        - "http://vlinsert-1:9428"
-        - "http://vlinsert-2:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 5"
-        # drop /my-account/kubernetes-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
-    max_concurrent_requests: 10
-  - username: mobile
-    password: secret
-    url_map:
-      - src_paths: ["/my-account/mobile-logs/insert/.*"]
-        url_prefix:
-        - "http://vlinsert-1:9428"
-        - "http://vlinsert-2:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 6"
-        # drop /my-account/mobile-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
-    max_concurrent_requests: 10
-  - username: frontend
-    password: secret
-    url_map:
-      - src_paths: ["/my-account/frontend-logs/insert/.*"]
-        url_prefix:
-        - "http://vlinsert-1:9428"
-        - "http://vlinsert-2:9428"
-        headers:
-          - "AccountID: 1"
-          - "ProjectID: 7"
-        # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 2
-    max_concurrent_requests: 10
+- username: kubernetes
+  password: secret
+  url_map:
+  - src_paths: ["/my-account/kubernetes-logs/insert/.*"]
+    url_prefix:
+    - "http://vlinsert-1:9428"
+    - "http://vlinsert-2:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 5"
+    # drop /my-account/kubernetes-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
+  max_concurrent_requests: 10
+- username: mobile
+  password: secret
+  url_map:
+  - src_paths: ["/my-account/mobile-logs/insert/.*"]
+    url_prefix:
+    - "http://vlinsert-1:9428"
+    - "http://vlinsert-2:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 6"
+    # drop /my-account/mobile-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
+  max_concurrent_requests: 10
+- username: frontend
+  password: secret
+  url_map:
+  - src_paths: ["/my-account/frontend-logs/insert/.*"]
+    url_prefix:
+    - "http://vlinsert-1:9428"
+    - "http://vlinsert-2:9428"
+    headers:
+    - "AccountID: 1"
+    - "ProjectID: 7"
+    # drop /my-account/frontend-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 2
+  max_concurrent_requests: 10
 ```
 
 Below is a diagram of this architecture for the clustered version of VictoriaLogs:
@@ -442,16 +442,16 @@ It also includes the `_stream_fields` parameter as an example of how to configur
 
 ```yaml
 users:
-    bearer_token: foobar
-    url_map:
-      - src_paths: ["/frontend-logs/insert/.*"]
-        url_prefix:
-        - "http://vlinsert-1:9428?extra_fields=service=frontend-logs&_stream_fields=service"
-        - "http://vlinsert-2:9428?extra_fields=service=frontend-logs&_stream_fields=service"
-        - "http://vlinsert-3:9428?extra_fields=service=frontend-logs&_stream_fields=service"
-        # drop /frontend-logs/ path prefix from the original request before proxying it to url_prefix.
-        drop_src_path_prefix_parts: 1
-    max_concurrent_requests: 10
+  bearer_token: foobar
+  url_map:
+  - src_paths: ["/frontend-logs/insert/.*"]
+    url_prefix:
+    - "http://vlinsert-1:9428?extra_fields=service=frontend-logs&_stream_fields=service"
+    - "http://vlinsert-2:9428?extra_fields=service=frontend-logs&_stream_fields=service"
+    - "http://vlinsert-3:9428?extra_fields=service=frontend-logs&_stream_fields=service"
+    # drop /frontend-logs/ path prefix from the original request before proxying it to url_prefix.
+    drop_src_path_prefix_parts: 1
+  max_concurrent_requests: 10
 ```
 
 Any field sent by the application will be overridden by the value set in the `extra_fields`, if defined.
