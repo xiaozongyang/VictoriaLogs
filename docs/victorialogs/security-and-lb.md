@@ -39,7 +39,8 @@ since they have the same search/write API.
 ## Search Authorization
 
 For log search, both [VictoriaLogs single-node](https://docs.victoriametrics.com/victorialogs/)
-and [vlselect](https://docs.victoriametrics.com/victorialogs/cluster/) expose the same search API endpoints starting with `/select/`.
+and [vlselect](https://docs.victoriametrics.com/victorialogs/cluster/) expose the same search API endpoints,
+which [start with `/select/` prefix](https://docs.victoriametrics.com/victorialogs/querying/#http-api).
 When configuring request authorization or load balancing, it is important to allow access to this path prefix.
 
 Below is an example of a vmauth configuration that:
@@ -156,7 +157,8 @@ unauthorized_user:
     - "AccountID: 0"
 ```
 
-This config allows building VictoriaLogs storage system with distinct per-tenant retention configs
+The similar configs can be created for VictoriaLogs data ingestion API endpoints, which [start with `/insert/` prefix](https://docs.victoriametrics.com/victorialogs/data-ingestion/#http-apis).
+This allows building VictoriaLogs storage system with distinct per-tenant retention configs
 similar to [this one](https://github.com/VictoriaMetrics/VictoriaLogs/issues/15#issuecomment-3043557052).
 
 ### Proxying requests to the given tenants
@@ -327,7 +329,8 @@ processes searches using stream filters faster than regular filters. See [LogsQL
 
 For log writing, [VictoriaLogs single-node](https://docs.victoriametrics.com/victorialogs/)
 and [vlinsert](https://docs.victoriametrics.com/victorialogs/cluster/) expose the same write API endpoints
-starting with `/insert/`, so when configuring write requests, it is important to set this path for request authorization.
+which [start with `/insert/` prefix](https://docs.victoriametrics.com/victorialogs/data-ingestion/#http-apis),
+so when configuring write requests, it is important to set this path for request authorization.
 
 Example vmauth configuration that allows insert requests
 with Basic auth authentication and distributes load between `vlinsert` nodes in the cluster:
