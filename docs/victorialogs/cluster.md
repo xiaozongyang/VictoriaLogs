@@ -181,6 +181,7 @@ See [security docs](#security) on how to protect communications between multiple
 All the VictoriaLogs cluster components must run in protected internal network without direct access from the Internet.
 `vlstorage` must have no access from the Internet. HTTP authorization proxies such as [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/)
 must be used in front of `vlinsert` and `vlselect` for authorizing access to these components from the Internet.
+See [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/).
 
 By default `vlinsert` and `vlselect` communicate with `vlstorage` via unencrypted HTTP. This is OK if all these components are located
 in the same protected internal network. This isn't OK if these components communicate over the Internet, since a third party can intercept / modify
