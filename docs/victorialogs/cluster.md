@@ -215,7 +215,7 @@ It is also recommended authorizing HTTPS requests to `vlstorage` via Basic Auth:
 Another option is to use third-party HTTP proxies such as [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/), `nginx`, etc. for authorizing and encrypting communications
 between VictoriaLogs cluster components over untrusted networks.
 
-By default, all the logs component (vlinsert, vlselect, vlstorage) support all the HTTP endpoints including `/insert/*` and `/select/*`. It's recommended to disable select endpoints on `vlinsert` and insert endpoints on `vlselect`:
+By default, all the components (vlinsert, vlselect, vlstorage) support all the HTTP endpoints including `/insert/*` and `/select/*`. It's recommended to disable select endpoints on `vlinsert` and insert endpoints on `vlselect`:
 
 ```sh
 # Disable select endpoints on vlinsert
