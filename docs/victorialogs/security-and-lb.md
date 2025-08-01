@@ -127,7 +127,39 @@ The `drop_src_path_prefix_parts` parameter is used to remove the prefix from the
 For example, if vmauth receives a request to `/cold/select/logsql/query`,
 VictoriaLogs will receive the path without the `/cold/` prefix, allowing it to properly handle the search query.
 
-### Tenant resolution
+### Tenant-based request proxying
+
+The following `vmauth` config proxies `/select/*` requests with the `AccountID: 0` HTTP header
+to the long-term VictoriaLogs instance or cluster, while requests with the `AccountID: 1` HTTP header
+are proxied to the short-term VictoriaLogs instance or cluster.
+
+```yaml
+unauthorized_user:
+- url_map:
+
+  # Proxy requests for the given tenant (AccountID=0) to long-term VictoriaLogs
+  # and override the ProjectID with 0.
+  - src_paths: ["/select/.*"]
+    src_headers:
+    - "AccountID: 0"
+    url_prefix: "http://victoria-logs-longterm:9428"
+    headers:
+    - "ProjectID: 0"
+
+  # Proxy requests for the given tenant (AccountID=1) to short-term VictoriaLogs
+  # and override the AccountID with 0.
+  - src_paths: ["/select/.*"]
+    src_headers:
+    - "AccountID: 1"
+    url_prefix: "http://victoria-logs-shortterm:9428"
+    headers:
+    - "AccountID: 0"
+```
+
+This config allows building VictoriaLogs storage system with distinct per-tenant retention configs
+similar to [this one](https://github.com/VictoriaMetrics/VictoriaLogs/issues/15#issuecomment-3043557052).
+
+### Proxying requests to the given tenants
 
 To properly separate and access data across tenants, two headers must be set when writing logs: `AccountID` and `ProjectID` according to [these docs](https://docs.victoriametrics.com/victorialogs/#multitenancy).
 When querying logs, you must provide the same headers to retrieve the corresponding data.
