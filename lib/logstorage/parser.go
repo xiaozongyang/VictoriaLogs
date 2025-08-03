@@ -461,9 +461,9 @@ func (q *Query) cloneShallow() *Query {
 
 // CloneWithTimeFilter clones q at the given timestamp and adds _time:[start, end] filter to the cloned q.
 func (q *Query) CloneWithTimeFilter(timestamp, start, end int64) *Query {
-	q = q.Clone(timestamp)
-	q.AddTimeFilter(start, end)
-	return q
+	qCopy := q.Clone(timestamp)
+	qCopy.AddTimeFilter(start, end)
+	return qCopy
 }
 
 // CanReturnLastNResults returns true if time range filter at q can be adjusted for returning the last N results.
