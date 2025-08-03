@@ -20,6 +20,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 * SECURITY: upgrade base docker image (Alpine) from 3.22.0 to 3.22.1. See [Alpine 3.22.1 release notes](https://www.alpinelinux.org/posts/Alpine-3.19.8-3.20.7-3.21.4-3.22.1-released.html).
 
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): speed up execution of queries, which select big number of logs and end with [`| sort by (_time) desc limit N` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe). E.g. these queries return up to N logs with the biggest [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) values from big number of selected logs (tens of millions and more). See [#46](https://github.com/VictoriaMetrics/VictoriaLogs/issues/46).
 * FEATURE: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): update legend behavior in hits chart. The menu now opens on left-click, and visibility actions are moved to menu items. See [#58](https://github.com/VictoriaMetrics/VictoriaLogs/issues/58).
 
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix broken "Collapse all" button in Group view. See [#509](https://github.com/VictoriaMetrics/VictoriaLogs/issues/509). The bug has been introduced in [v1.26.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.26.0).
