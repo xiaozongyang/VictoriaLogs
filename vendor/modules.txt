@@ -1,4 +1,4 @@
-# github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-20250728114102-65251c8fe272
+# github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-20250804081214-847398b356ae
 ## explicit; go 1.24.5
 github.com/VictoriaMetrics/VictoriaMetrics/lib/appmetrics
 github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil
@@ -31,7 +31,7 @@ github.com/VictoriaMetrics/VictoriaMetrics/lib/netutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/persistentqueue
 github.com/VictoriaMetrics/VictoriaMetrics/lib/procutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/promauth
-github.com/VictoriaMetrics/VictoriaMetrics/lib/prompbmarshal
+github.com/VictoriaMetrics/VictoriaMetrics/lib/prompb
 github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/opentelemetry/pb
 github.com/VictoriaMetrics/VictoriaMetrics/lib/protoparser/protoparserutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics
