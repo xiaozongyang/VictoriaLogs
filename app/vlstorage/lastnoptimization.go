@@ -60,7 +60,6 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 	var rowsFound []logRow
 
 	for {
-		timestamp := qOrig.GetTimestamp()
 		q = qOrig.CloneWithTimeFilter(timestamp, start, end)
 		q.AddPipeLimit(2 * n)
 		rows, err := getQueryResults(ctx, tenantIDs, q)
