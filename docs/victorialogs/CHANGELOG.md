@@ -18,6 +18,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* SECURITY: upgrade Go builder from Go1.24.5 to Go1.24.6. See [the list of issues addressed in Go1.24.6](https://github.com/golang/go/issues?q=milestone%3AGo1.24.6+label%3ACherryPickApproved).
 * SECURITY: upgrade base docker image (Alpine) from 3.22.0 to 3.22.1. See [Alpine 3.22.1 release notes](https://www.alpinelinux.org/posts/Alpine-3.19.8-3.20.7-3.21.4-3.22.1-released.html).
 
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): speed up execution of queries, which select big number of logs and end with [`| sort by (_time) desc limit N` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe). E.g. these queries return up to N logs with the biggest [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) values from big number of selected logs (tens of millions and more). See [#46](https://github.com/VictoriaMetrics/VictoriaLogs/issues/46).
