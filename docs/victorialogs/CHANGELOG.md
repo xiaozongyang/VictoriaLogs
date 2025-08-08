@@ -37,6 +37,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix broken "Collapse all" button in Group view. See [#509](https://github.com/VictoriaMetrics/VictoriaLogs/issues/509). The bug has been introduced in [v1.26.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.26.0).
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix applying legend filter when using pipe filters. See [#546](https://github.com/VictoriaMetrics/VictoriaLogs/issues/546).
+* BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): optimize tooltip rendering. See [#531](https://github.com/VictoriaMetrics/VictoriaLogs/issues/531).
 * BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): prevent from possible crash when ingesting logs for dates, which are concurrently removed because of [the configured retention](https://docs.victoriametrics.com/victorialogs/#retention). See [#505](https://github.com/VictoriaMetrics/VictoriaLogs/issues/505).
 * BUGFIX: [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/): support numbers and null in Loki structured metadata. See [#547](https://github.com/VictoriaMetrics/VictoriaLogs/issues/547).
 
