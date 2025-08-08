@@ -175,19 +175,15 @@ or
 
 ## Storage
 
-By default VictoriaLogs stores all its data in a single directory - `victoria-logs-data`. The path to the directory can be changed via `-storageDataPath` command-line flag.
+VictoriaLogs stores all its data in a single directory - `victoria-logs-data`. The path to the directory can be changed via `-storageDataPath` command-line flag.
 For example, the following command starts VictoriaLogs, which stores the data at `/var/lib/victoria-logs`:
 
 ```sh
 /path/to/victoria-logs -storageDataPath=/var/lib/victoria-logs
 ```
 
-VictoriaLogs automatically creates the `-storageDataPath` directory on the first run if it is missing.
-
-The ingested logs are stored in per-day subdirectories (partitions) at the `<-storageDataPath>/partitions` directory. The per-day subdirectories have `YYYYMMDD` names.
-For example, the directory with the name `20250418` contains logs with [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) values
-at April 18, 2025 UTC. This allows flexible data management. For example, old per-day data is automatically and quickly deleted according to the provided [retention policy](#retention)
-by removing the corresponding per-day subdirectory (partition).
+VictoriaLogs automatically creates the `-storageDataPath` directory on the first run if it is missing. VictoriaLogs stores logs
+per every day into a spearate subdirectory (aka per-day partition). See [partitions lifecycle](#partitions-lifecycle) for details.
 
 VictoriaLogs switches to cluster mode if `-storageNode` command-line flag is specified:
 
@@ -195,6 +191,41 @@ VictoriaLogs switches to cluster mode if `-storageNode` command-line flag is spe
 - It stops querying the locally stored logs in cluster mode. It queries `vlstorage` nodes specified via `-storageNode` command-line flag.
 
 See [cluster mode docs](https://docs.victoriametrics.com/victorialogs/cluster/) for details.
+
+## Partitions lifecycle
+
+The ingested logs are stored in per-day subdirectories (partitions) at the `<-storageDataPath>/partitions/` directory. The per-day subdirectories have `YYYYMMDD` names.
+For example, the directory with the name `20250418` contains logs with [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) values
+at April 18, 2025 UTC. This allows flexible data management.
+
+For example, old per-day data is automatically and quickly deleted according to the provided [retention policy](#retention) by removing the corresponding per-day subdirectory (partition).
+
+VictoriaLogs supports dynamic attach and detach of per-day partitions, by using the following HTTP API endpoints:
+
+- `/internal/partition/attach?name=YYYYMMDD` - attaches the partition directory with the given name `YYYYMMDD` to VictoriaLogs,
+  so it becomes visible for querying and can be used for data ingestion.
+  The directory must be placed inside `<-storageDataPath>/partitions` and it must contain valid data for the given `YYYYMMDD` day.
+- `/internal/partition/detach?name=YYYYMMDD` - detaches the partition directory with the given name `YYYYMMDD` from VictoriaLogs,
+  so it is no longer visible for querying and cannot be used for data ingestion.
+  The `/internal/partition/detach` endpoint waits until all the concurrently executed queries stop reading the data from the detached partition
+  before returning. This allows safe manipulion of the detached partitions by external tools on disk after returning from the `/internal/partition/detach` endpoint.
+
+These endpoints can be protected from unauthorized access via `-partitionManageAuthKey` [command-line flag](#list-of-command-line-flags).
+
+These endpoints can be used for building a flexible per-partition backup / restore schemes as described [in these docs](#backup-and-restore).
+
+These endpoints can be used also for setting up automated multi-tier storage schemes where recently ingested logs are stored to VictoriaLogs instances
+with fast NVMe (SSD) disks, while historical logs are gradully migrated to VictoriaLogs instances with slower, but bigger and less expensive HDD disks.
+This scheme can be implemented with the following simple cron job, which must run once per day:
+
+1. To copy per-day partition for the older day stored at NVMe from NVMe to HDD, with the help of [`rsync`](https://en.wikipedia.org/wiki/Rsync).
+1. To detach the copied partition from the VictoriaLogs with NVMe.
+1. To run the `rsync` on the copied partition again in order sync the possible changes in the partition during the previous copy.
+1. To attach the copied partition to the VictoriaLogs with HDD.
+1. To delete the copied partition directory from the VictoriaLogs with NVMe.
+
+All the VictoriaLogs with NVMe and HDD disks can be queried simultaneously via `vlselect` component of [VictoriaLogs cluster](https://docs.victoriametrics.com/victorialogs/cluster/),
+since [single-node VictoriaLogs instances can be a part of cluster](https://docs.victoriametrics.com/victorialogs/cluster/#single-node-and-cluster-mode-duality).
 
 ## Forced merge
 
@@ -209,6 +240,8 @@ merge for September 21, 2024 partition. The call to `/internal/force_merge` retu
 Forced merges may require additional CPU, disk IO and storage space resources. It is unnecessary to run forced merge under normal conditions,
 since VictoriaLogs automatically performs optimal merges in background when new data is ingested into it.
 
+The `/internal/force_merge` endpoint can be protected from unauthorized access via `-forceMergeAuthKey` [command-line flag](#list-of-command-line-flags).
+
 ## Forced flush
 
 VictoriaLogs puts the recently [ingested logs](https://docs.victoriametrics.com/victorialogs/data-ingestion/) into in-memory buffers,
@@ -219,6 +252,8 @@ before querying. This endpoint converts in-memory buffers with the recently inge
 It isn't recommended requesting the `/internal/force_flush` HTTP endpoint on a regular basis, since this increases CPU usage
 and slows down data ingestion. It is expected that the `/internal/force_flush` is requested in automated tests, which need querying
 the recently ingested data.
+
+The `/internal/force_flush` endpoint can be protected from unauthorized access via `-forceFlushAuthKey` [command-line flag](#list-of-command-line-flags).
 
 ## High Availability
 
@@ -242,50 +277,40 @@ Here are the working example of HA configuration for VictoriaLogs using Docker C
 
 ## Backup and restore
 
-VictoriaLogs currently does not have a snapshot feature and a tool like vmbackup as VictoriaMetrics does.
-So backing up VictoriaLogs requires manually executing the `rsync` command.
+VictoriaLogs stores data into independent per-day partitions. Every partition is stored in a distinct directory under `<-storageDataPath>/partitions/` directory.
+See [these docs](#partitions-lifecycle) for details. It is safe to backup separate partitions with the [`rsync`](https://en.wikipedia.org/wiki/Rsync) command.
 
 The files in VictoriaLogs have the following properties:
 
 - All the data files are immutable. Small metadata files can be modified.
 - Old data files are periodically merged into new data files.
 
-Therefore, for a complete data **backup**, you need to run the `rsync` command **twice**.
+Therefore, for a complete **backup** of some per-day partition or a set of partitions, you need to run the `rsync` command **twice**.
 
 ```sh
 # example of rsync to remote host
 rsync -avh --progress --delete <path-to-victorialogs-data> <username>@<host>:<path-to-victorialogs-backup>
 ```
 
+The `--delete` option is required in the command above, since it ensures that the backup contains the full copy of the original data and doesn't contain superfluous files.
+
 The first `rsync` will sync the majority of the data, which can be time-consuming.
 As VictoriaLogs continues to run, new data is ingested, potentially creating new data files and modifying metadata files.
 
-```sh
-# example output
-sending incremental file list
-victoria-logs-data/
-victoria-logs-data/flock.lock
-              0 100%    0.00kB/s    0:00:00 (xfr#1, to-chk=78/80)
-
-...
-
-victoria-logs-data/partitions/20240809/indexdb/17E9ED7EF89BF422/metaindex.bin
-             51 100%    5.53kB/s    0:00:00 (xfr#64, to-chk=0/80)
-
-sent 12.19K bytes  received 1.30K bytes  3.86K bytes/sec
-total size is 7.31K  speedup is 0.54
-```
-
-The second `rsync` **requires a brief shutdown of VictoriaLogs** to ensure all data and metadata files are consistent and no longer changing.
+The second `rsync` **requires a brief detaching of the backed up partitions** to ensure all data and metadata files are consistent and are no longer changing.
+See [how to detach and attach partitions without the need to stop VictoriaLogs](#partitions-lifecycle).
 This `rsync` will cover any changes that have occurred since the last `rsync` and should not take a significant amount of time.
 
-To **restore** from a backup, simply `rsync` the backup files from a remote location to the original directory during downtime.
-VictoriaLogs will automatically load this data upon startup.
+To **restore** from a backup, simply `rsync` the backup from a remote location to the original partition directories and then [attach them](#partitions-lifecycle)
+without the need to restart VictoriaLogs. Another option is to `rsync` the partitions from the backup while VictoriaLogs isn't running and then start VictoriaLogs.
+It will automatically discover and open all the partitions under the `<-storageDataPath>/partitions/` directory.
 
 ```sh
 # example of rsync from remote backup to local
 rsync -avh --progress --delete <username>@<host>:<path-to-victorialogs-backup> <path-to-victorialogs-data>
 ```
+
+The `--delete` option is required in the command above, since it ensures that the destination folder contains the full copy of the backup and doesn't contain superfluous files.
 
 It is also possible to use **the disk snapshot** in order to perform a backup. This feature could be provided by your operating system,
 cloud provider, or third-party tools. Note that the snapshot must be **consistent** to ensure reliable backup.
@@ -342,6 +367,12 @@ It is expected that VictoriaLogs runs in a protected environment, which is unrea
 It is recommended providing access to VictoriaLogs [data ingestion APIs](https://docs.victoriametrics.com/victorialogs/data-ingestion/)
 and [querying APIs](https://docs.victoriametrics.com/victorialogs/querying/#http-api) via [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/)
 or similar authorization proxies. See [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/) for details.
+
+It is recommended protecting internal HTTP endpoints from unauthorized access:
+
+- [`/internal/force_flush`](#forced-flush) - via `-forceFlushAuthKey` [command-line flag](#list-of-command-line-flags).
+- [`/internal/force_merge`](#forced-merge) - via `-forceMergeAuthKey` [command-line flag](#list-of-command-line-flags).
+- [`/internal/partition/*`](#partitions-lifecycle) - via `-partitionManageAuthKey` [command-line flag](#list-of-command-line-flags).
 
 ## Benchmarks
 
@@ -499,7 +530,7 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
         Supports an array of values separated by comma or specified via multiple flags.
         Value can contain comma inside single-quoted or double-quoted string, {}, [] and () braces.
   -journald.includeEntryMetadata
-        Include journal entry fields, which with double underscores.
+        Include Journald fields with double underscore prefixes
   -journald.streamFields array
         Comma-separated list of fields to use as log stream fields for logs ingested over journald protocol. See https://docs.victoriametrics.com/victorialogs/data-ingestion/journald/#stream-fields
         Supports an array of values separated by comma or specified via multiple flags.
@@ -536,7 +567,7 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
         The maximum size in bytes of a single Loki request
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 67108864)
   -maxConcurrentInserts int
-        The maximum number of concurrent insert requests. Set higher value when clients send data over slow networks. Default value depends on the number of available CPU cores. It should work fine in most cases since it minimizes resource usage. See also -insert.maxQueueDuration (default 28)
+        The maximum number of concurrent insert requests. Set higher value when clients send data over slow networks. Default value depends on the number of available CPU cores. It should work fine in most cases since it minimizes resource usage. See also -insert.maxQueueDuration (default 32)
   -memory.allowedBytes size
         Allowed size of system memory VictoriaMetrics caches may occupy. This option overrides -memory.allowedPercent if set to a non-zero value. Too low a value may increase the cache miss rate usually resulting in higher CPU and disk IO usage. Too high a value may evict too much data from the OS page cache resulting in higher disk IO usage
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 0)
@@ -547,17 +578,12 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
   -metricsAuthKey value
         Auth key for /metrics endpoint. It must be passed via authKey query arg. It overrides -httpAuth.*
         Flag value can be read from the given file when using -metricsAuthKey=file:///abs/path/to/file or -metricsAuthKey=file://./relative/path/to/file . Flag value can be read from the given http/https url when using -metricsAuthKey=http://host/path or -metricsAuthKey=https://host/path
-  -mtls array
-        Whether to require valid client certificate for https requests to the corresponding -httpListenAddr . This flag works only if -tls flag is set. See also -mtlsCAFile . This flag is available only in Enterprise binaries. See https://docs.victoriametrics.com/victoriametrics/enterprise/
-        Supports array of values separated by comma or specified via multiple flags.
-        Empty values are set to false.
-  -mtlsCAFile array
-        Optional path to TLS Root CA for verifying client certificates at the corresponding -httpListenAddr when -mtls is enabled. By default the host system TLS Root CA is used for client certificate verification. This flag is available only in Enterprise binaries. See https://docs.victoriametrics.com/victoriametrics/enterprise/
-        Supports an array of values separated by comma or specified via multiple flags.
-        Value can contain comma inside single-quoted or double-quoted string, {}, [] and () braces.
   -opentelemetry.maxRequestSize size
         The maximum size in bytes of a single OpenTelemetry request
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 67108864)
+  -partitionManageAuthKey value
+        authKey, which must be passed in query string to /internal/partition/* . It overrides -httpAuth.* . See https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle
+        Flag value can be read from the given file when using -partitionManageAuthKey=file:///abs/path/to/file or -partitionManageAuthKey=file://./relative/path/to/file . Flag value can be read from the given http/https url when using -partitionManageAuthKey=http://host/path or -partitionManageAuthKey=https://host/path
   -pprofAuthKey value
         Auth key for /debug/pprof/* endpoints. It must be passed via authKey query arg. It overrides -httpAuth.*
         Flag value can be read from the given file when using -pprofAuthKey=file:///abs/path/to/file or -pprofAuthKey=file://./relative/path/to/file . Flag value can be read from the given http/https url when using -pprofAuthKey=http://host/path or -pprofAuthKey=https://host/path
@@ -581,12 +607,12 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
         The maximum disk space usage at -storageDataPath before older per-day partitions are automatically dropped; see https://docs.victoriametrics.com/victorialogs/#retention-by-disk-space-usage ; see also -retentionPeriod
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 0)
   -retention.maxDiskUsagePercent int
-        The maximum allowed disk usage percentage (1-100) for the filesystem that contains -storageDataPath before older per-day partitions are automatically dropped; mutually exclusive with -retention.maxDiskSpaceUsageBytes; see https://docs.victoriametrics.com/victorialogs/#retention-by-disk-space-usage (default 0)
+        The maximum allowed disk usage percentage (1-100) for the filesystem that contains -storageDataPath before older per-day partitions are automatically dropped; mutually exclusive with -retention.maxDiskSpaceUsageBytes; see https://docs.victoriametrics.com/victorialogs/#retention-by-disk-space-usage-percent
   -retentionPeriod value
         Log entries with timestamps older than now-retentionPeriod are automatically deleted; log entries with timestamps outside the retention are also rejected during data ingestion; the minimum supported retention is 1d (one day); see https://docs.victoriametrics.com/victorialogs/#retention ; see also -retention.maxDiskSpaceUsageBytes and -retention.maxDiskUsagePercent
         The following optional suffixes are supported: s (second), h (hour), d (day), w (week), y (year). If suffix isn't set, then the duration is counted in months (default 7d)
   -search.maxConcurrentRequests int
-        The maximum number of concurrent search requests. It shouldn't be high, since a single request can saturate all the CPU cores, while many concurrently executed requests may require high amounts of memory. See also -search.maxQueueDuration (default 14)
+        The maximum number of concurrent search requests. It shouldn't be high, since a single request can saturate all the CPU cores, while many concurrently executed requests may require high amounts of memory. See also -search.maxQueueDuration (default 16)
   -search.maxQueryDuration duration
         The maximum duration for query execution. It can be overridden to a smaller value on a per-query basis via 'timeout' query arg (default 30s)
   -search.maxQueueDuration duration
@@ -732,18 +758,18 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
         Whether to use local timestamp instead of the original timestamp for the ingested syslog messages at the corresponding -syslog.listenAddr.udp. See https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/#log-timestamps
         Supports array of values separated by comma or specified via multiple flags.
         Empty values are set to false.
+  -syslog.useRemoteIP.tcp array
+        Whether to add remote ip address as 'remote_ip' log field for syslog messages ingested via the corresponding -syslog.listenAddr.tcp. See https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/#capturing-remote-ip-address
+        Supports array of values separated by comma or specified via multiple flags.
+        Empty values are set to false.
+  -syslog.useRemoteIP.udp array
+        Whether to add remote ip address as 'remote_ip' log field for syslog messages ingested via the corresponding -syslog.listenAddr.udp. See https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/#capturing-remote-ip-address
+        Supports array of values separated by comma or specified via multiple flags.
+        Empty values are set to false.
   -tls array
         Whether to enable TLS for incoming HTTP requests at the given -httpListenAddr (aka https). -tlsCertFile and -tlsKeyFile must be set if -tls is set. See also -mtls
         Supports array of values separated by comma or specified via multiple flags.
         Empty values are set to false.
-  -tlsAutocertCacheDir string
-        Directory to store TLS certificates issued via Let's Encrypt. Certificates are lost on restarts if this flag isn't set. This flag is available only in Enterprise binaries. See https://docs.victoriametrics.com/victoriametrics/enterprise/
-  -tlsAutocertEmail string
-        Contact email for the issued Let's Encrypt TLS certificates. See also -tlsAutocertHosts and -tlsAutocertCacheDir .This flag is available only in Enterprise binaries. See https://docs.victoriametrics.com/victoriametrics/enterprise/
-  -tlsAutocertHosts array
-        Optional hostnames for automatic issuing of Let's Encrypt TLS certificates. These hostnames must be reachable at -httpListenAddr . The -httpListenAddr must listen tcp port 443 . The -tlsAutocertHosts overrides -tlsCertFile and -tlsKeyFile . See also -tlsAutocertEmail and -tlsAutocertCacheDir . This flag is available only in Enterprise binaries. See https://docs.victoriametrics.com/victoriametrics/enterprise/
-        Supports an array of values separated by comma or specified via multiple flags.
-        Value can contain comma inside single-quoted or double-quoted string, {}, [] and () braces.
   -tlsCertFile array
         Path to file with TLS certificate for the corresponding -httpListenAddr if -tls is set. Prefer ECDSA certs instead of RSA certs as RSA certs are slower. The provided certificate file is automatically re-read every second, so it can be dynamically updated. See also -tlsAutocertHosts
         Supports an array of values separated by comma or specified via multiple flags.

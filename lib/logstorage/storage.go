@@ -134,7 +134,14 @@ type Storage struct {
 	// It must be accessed under partitionsLock.
 	ptwHot *partitionWrapper
 
-	// partitionsLock protects partitions and ptwHot.
+	// deletedPartitions contains days for the deleted partitions.
+	//
+	// It prevents from re-creating already deleted partitions.
+	//
+	// It must be accessed under partitionsLock.
+	deletedPartitions []int64
+
+	// partitionsLock protects partitions, ptwHot, deletedPartitions.
 	partitionsLock sync.Mutex
 
 	// stopCh is closed when the Storage must be stopped.
@@ -153,12 +160,94 @@ type Storage struct {
 	//
 	// It reduces the load on persistent storage during querying by _stream:{...} filter.
 	filterStreamCache *cache
+}
 
-	// minRetentionDay is the minimum allowed day for logs' ingestion because of the configured retention.
-	// Older logs are rejected during data ingestion.
-	//
-	// minRetentionDay must be accessed under the partitionsLock.
-	minRetentionDay int64
+// PartitionAttach attaches the partition with the given name to s.
+//
+// The name must have the YYYYMMDD format.
+//
+// The attached partition can be detached via PartitionDetach() call.
+func (s *Storage) PartitionAttach(name string) error {
+	day, err := getPartitionDayFromName(name)
+	if err != nil {
+		return err
+	}
+
+	s.partitionsLock.Lock()
+	defer s.partitionsLock.Unlock()
+
+	if slices.Contains(s.deletedPartitions, day) {
+		return fmt.Errorf("cannot attach the partition %q, since it is automatically deleted because of retention; see https://docs.victoriametrics.com/victorialogs/#retention", name)
+	}
+
+	// Verify whether the given partition already exists in the attached partitions list.
+	for _, ptw := range s.partitions {
+		if ptw.day == day {
+			return fmt.Errorf("cannot attach the partition %q, because it is arleady attached", name)
+		}
+	}
+
+	// Open the partition and add it to the s.partitions.
+	partitionsPath := filepath.Join(s.path, partitionsDirname)
+	partitionPath := filepath.Join(partitionsPath, name)
+	if !fs.IsPathExist(partitionPath) {
+		return fmt.Errorf("cannot attach the partition %q, because there is no the corresponding directory %q", name, partitionPath)
+	}
+
+	pt := mustOpenPartition(s, partitionPath)
+	ptw := newPartitionWrapper(pt, day)
+
+	s.partitions = append(s.partitions, ptw)
+	sortPartitions(s.partitions)
+
+	logger.Infof("successfully attached partition %q from %q", name, partitionPath)
+
+	return nil
+}
+
+// PartitionDetach detaches the partition with the given name from s.
+//
+// The name must have the YYYYMMDD format.
+//
+// The detached partition can be attached again via PartitionAttach() call.
+func (s *Storage) PartitionDetach(name string) error {
+	day, err := getPartitionDayFromName(name)
+	if err != nil {
+		return err
+	}
+
+	ptw := func() *partitionWrapper {
+		s.partitionsLock.Lock()
+		defer s.partitionsLock.Unlock()
+
+		for i, ptw := range s.partitions {
+			if ptw.day != day {
+				continue
+			}
+
+			// Found the partition to detach. Detach it.
+			s.partitions = append(s.partitions[:i], s.partitions[i+1:]...)
+			if ptw == s.ptwHot {
+				s.ptwHot = nil
+			}
+			return ptw
+		}
+		return nil
+	}()
+
+	if ptw == nil {
+		return fmt.Errorf("cannot detach the partition %q, because it isn't attached", name)
+	}
+
+	partitionPath := ptw.pt.path
+	ptw.decRef()
+
+	logger.Infof("waiting until all the concurrent readers stop reading from the partition %q", name)
+	<-ptw.doneCh
+
+	logger.Infof("successfully detached partition %q from %q", name, partitionPath)
+
+	return nil
 }
 
 type partitionWrapper struct {
@@ -174,12 +263,16 @@ type partitionWrapper struct {
 
 	// pt is the wrapped partition.
 	pt *partition
+
+	// doneCh is closed when refCount reaches zero, e.g. when the partitionWrapper is no longer accessed.
+	doneCh chan struct{}
 }
 
 func newPartitionWrapper(pt *partition, day int64) *partitionWrapper {
 	pw := &partitionWrapper{
-		day: day,
-		pt:  pt,
+		day:    day,
+		pt:     pt,
+		doneCh: make(chan struct{}),
 	}
 	pw.incRef()
 	return pw
@@ -208,6 +301,9 @@ func (ptw *partitionWrapper) decRef() {
 	if deletePath != "" {
 		mustDeletePartition(deletePath)
 	}
+
+	// signal that the ptw is no longer accessed.
+	close(ptw.doneCh)
 }
 
 func (ptw *partitionWrapper) canAddAllRows(lr *LogRows) bool {
@@ -307,11 +403,10 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 				wg.Done()
 			}()
 
-			t, err := time.Parse(partitionNameFormat, fname)
+			day, err := getPartitionDayFromName(fname)
 			if err != nil {
-				logger.Panicf("FATAL: cannot parse partition filename %q at %q; it must be in the form YYYYMMDD: %s", fname, partitionsPath, err)
+				logger.Panicf("FATAL: cannot parse partition filename %q at %q: %s", fname, partitionsPath, err)
 			}
-			day := t.UTC().UnixNano() / nsecsPerDay
 
 			partitionPath := filepath.Join(partitionsPath, fname)
 			pt := mustOpenPartition(s, partitionPath)
@@ -320,9 +415,7 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 	}
 	wg.Wait()
 
-	sort.Slice(ptws, func(i, j int) bool {
-		return ptws[i].day < ptws[j].day
-	})
+	sortPartitions(ptws)
 
 	// Delete partitions from the future if needed
 	maxAllowedDay := s.getMaxAllowedDay()
@@ -349,7 +442,11 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 	return s
 }
 
-const partitionNameFormat = "20060102"
+func sortPartitions(ptws []*partitionWrapper) {
+	sort.Slice(ptws, func(i, j int) bool {
+		return ptws[i].day < ptws[j].day
+	})
+}
 
 func (s *Storage) runRetentionWatcher() {
 	s.wg.Add(1)
@@ -391,7 +488,7 @@ func (s *Storage) watchRetention() {
 			// ptws are sorted by time, so just drop all the partitions until i.
 			ptwsToDelete = ptws[:i]
 			s.partitions = ptws[i:]
-			s.updateMinRetentionDayLocked(ptwsToDelete)
+			s.updateDeletedPartitionsLocked(ptwsToDelete)
 
 			// Remove reference to deleted partitions from s.ptwHot
 			if slices.Contains(ptwsToDelete, s.ptwHot) {
@@ -465,7 +562,7 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 			i++
 			ptwsToDelete = ptws[:i]
 			s.partitions = ptws[i:]
-			s.updateMinRetentionDayLocked(ptwsToDelete)
+			s.updateDeletedPartitionsLocked(ptwsToDelete)
 
 			// Remove reference to deleted partitions from s.ptwHot
 			if slices.Contains(ptwsToDelete, s.ptwHot) {
@@ -498,15 +595,11 @@ func (s *Storage) watchMaxDiskSpaceUsage() {
 	}
 }
 
-func (s *Storage) updateMinRetentionDayLocked(ptwsToDelete []*partitionWrapper) {
-	if len(ptwsToDelete) == 0 {
-		// Nothing to update
-		return
-	}
-
-	minDay := ptwsToDelete[len(ptwsToDelete)-1].day + 1
-	if s.minRetentionDay < minDay {
-		s.minRetentionDay = minDay
+func (s *Storage) updateDeletedPartitionsLocked(ptwsToDelete []*partitionWrapper) {
+	for _, ptw := range ptwsToDelete {
+		if !slices.Contains(s.deletedPartitions, ptw.day) {
+			s.deletedPartitions = append(s.deletedPartitions, ptw.day)
+		}
 	}
 }
 
@@ -642,20 +735,15 @@ func (s *Storage) MustAddRows(lr *LogRows) {
 		lrPart.mustAddInternal(lr.streamIDs[i], ts, lr.rows[i], lr.streamTagsCanonicals[i])
 	}
 	for day, lrPart := range m {
-		ptw := s.getPartitionForDay(day)
+		ptw := s.getPartitionForWriting(day)
 		if ptw != nil {
 			ptw.pt.mustAddRows(lrPart)
 			ptw.decRef()
 		} else {
 			// the lrPart must contain at least a single row, so log it.
 			line := MarshalFieldsToJSON(nil, lrPart.rows[0])
-			var reason string
-			if s.maxDiskSpaceUsageBytes > 0 {
-				reason = fmt.Sprintf("-retention.maxDiskSpaceUsageBytes=%d", s.maxDiskSpaceUsageBytes)
-			} else {
-				reason = fmt.Sprintf("-retention.maxDiskUsagePercent=%d%%", s.maxDiskUsagePercent)
-			}
-			tooSmallTimestampLogger.Warnf("skipping log entry with too small timestamp because of %s; log entry: %s", reason, line)
+			inactivePartitionLogger.Warnf("skipping log entry because it cannot be saved into inactive per-day partition; "+
+				"see https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle; log entry %s", line)
 		}
 		PutLogRows(lrPart)
 	}
@@ -663,6 +751,7 @@ func (s *Storage) MustAddRows(lr *LogRows) {
 
 var tooSmallTimestampLogger = logger.WithThrottler("too_small_timestamp", 5*time.Second)
 var tooBigTimestampLogger = logger.WithThrottler("too_big_timestamp", 5*time.Second)
+var inactivePartitionLogger = logger.WithThrottler("inactive_partition", 5*time.Second)
 
 // TimeFormatter implements fmt.Stringer for timestamp in nanoseconds
 type TimeFormatter int64
@@ -674,12 +763,21 @@ func (tf *TimeFormatter) String() string {
 	return t.Format(time.RFC3339Nano)
 }
 
-// getPartitionForDay returns the partition for the given day.
+// getPartitionForWriting returns the partition for the given day for writing.
 //
-// It may return nil if the partition for the given day has been already dropped
-// because of the disk-size based retention.
-func (s *Storage) getPartitionForDay(day int64) *partitionWrapper {
+// The partition is automatically created if it didn't exist.
+//
+// nil is returned if the partition directory already exists, but it isn't registered in the list of active partitions.
+// This can happen in the following cases:
+//
+//   - When the partition goes outside the configured retention.
+//   - When the partition has been detached via Storage.PartitionDetach().
+//   - When the partition directory has been manually added, but wasn't attached yet via Storage.PartitionAttach().
+//
+// The caller must log this case and drop pending logs for this partition.
+func (s *Storage) getPartitionForWriting(day int64) *partitionWrapper {
 	s.partitionsLock.Lock()
+	defer s.partitionsLock.Unlock()
 
 	// Search for the partition using binary search
 	ptws := s.partitions
@@ -695,15 +793,19 @@ func (s *Storage) getPartitionForDay(day int64) *partitionWrapper {
 	}
 	if ptw == nil {
 		// Missing partition for the given day. Create it.
-
-		if day < s.minRetentionDay {
-			// Cannot create the partition for the given day, since it has been already removed because of retention.
-			s.partitionsLock.Unlock()
+		if slices.Contains(s.deletedPartitions, day) {
+			// The partition has been already deleted.
 			return nil
 		}
 
-		fname := time.Unix(0, day*nsecsPerDay).UTC().Format(partitionNameFormat)
+		fname := getPartitionNameFromDay(day)
 		partitionPath := filepath.Join(s.path, partitionsDirname, fname)
+		if fs.IsPathExist(partitionPath) {
+			// The partition directory exists. This can happen in the following cases:
+			// - When the partition directory has been manually added, but it wasn't attached yet via Storage.PartitionAttach().
+			// - When the partition has been detached via Storage.PartitionDetach().
+			return nil
+		}
 		mustCreatePartition(partitionPath)
 
 		pt := mustOpenPartition(s, partitionPath)
@@ -719,8 +821,6 @@ func (s *Storage) getPartitionForDay(day int64) *partitionWrapper {
 
 	s.ptwHot = ptw
 	ptw.incRef()
-
-	s.partitionsLock.Unlock()
 
 	return ptw
 }
