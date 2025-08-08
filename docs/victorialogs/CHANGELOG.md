@@ -18,6 +18,10 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+## [v1.27.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.27.0)
+
+Released at 2025-08-08
+
 * SECURITY: upgrade Go builder from Go1.24.5 to Go1.24.6. See [the list of issues addressed in Go1.24.6](https://github.com/golang/go/issues?q=milestone%3AGo1.24.6+label%3ACherryPickApproved).
 * SECURITY: upgrade base docker image (Alpine) from 3.22.0 to 3.22.1. See [Alpine 3.22.1 release notes](https://www.alpinelinux.org/posts/Alpine-3.19.8-3.20.7-3.21.4-3.22.1-released.html).
 
