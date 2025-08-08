@@ -301,6 +301,7 @@ If `AccountID` and/or `ProjectID` request headers aren't set, then the default `
 VictoriaLogs has very low overhead for per-tenant management, so it is OK to have thousands of tenants in a single VictoriaLogs instance.
 
 VictoriaLogs doesn't perform per-tenant authorization. Use [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/) or similar tools for per-tenant authorization.
+See [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/) for details.
 
 ### Multitenancy access control
 
@@ -332,6 +333,8 @@ users:
 ```
 
 This configuration allows `foo` to use the `/select/.*` and `/insert/.*` endpoints with `AccountID: 1` and `ProjectID: 0`, while `baz` can only use the `/select/.*` endpoint with `AccountID: 2` and `ProjectID: 0`.
+
+See also [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/).
 
 ## Security
 
