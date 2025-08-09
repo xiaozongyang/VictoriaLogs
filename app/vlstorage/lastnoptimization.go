@@ -12,10 +12,13 @@ import (
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
 )
 
-func runOptimizedLastNResultsQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64, writeBlock logstorage.WriteDataBlockFunc) error {
-	rows, err := getLastNQueryResults(ctx, tenantIDs, q, limit)
+func runOptimizedLastNResultsQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, offset, limit uint64, writeBlock logstorage.WriteDataBlockFunc) error {
+	rows, err := getLastNQueryResults(ctx, tenantIDs, q, offset+limit)
 	if err != nil {
 		return err
+	}
+	if uint64(len(rows)) > offset {
+		rows = rows[:uint64(len(rows))-offset]
 	}
 
 	var db logstorage.DataBlock
@@ -40,7 +43,7 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 	timestamp := qOrig.GetTimestamp()
 
 	q = qOrig.Clone(timestamp)
-	q.AddPipeLimit(2 * limit)
+	q.AddPipeOffsetLimit(0, 2*limit)
 	rows, err := getQueryResults(ctx, tenantIDs, q)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 
 	for {
 		q = qOrig.CloneWithTimeFilter(timestamp, start, end)
-		q.AddPipeLimit(2 * n)
+		q.AddPipeOffsetLimit(0, 2*n)
 		rows, err := getQueryResults(ctx, tenantIDs, q)
 		if err != nil {
 			return nil, err

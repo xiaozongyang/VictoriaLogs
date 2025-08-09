@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): speed up queries, which select big number of logs and end with [`| sort by (_time) desc offset M limit N` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe). E.g. these queries allow building simple pagination over the selected logs. See [#96](https://github.com/VictoriaMetrics/VictoriaLogs/issues/96).
+
 ## [v1.27.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.27.0)
 
 Released at 2025-08-08

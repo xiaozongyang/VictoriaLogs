@@ -37,17 +37,17 @@ func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
-	maxValuesPerField, err := httputil.GetInt(r, "max_values_per_field")
+	maxValuesPerField, err := getPositiveInt(r, "max_values_per_field")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
-	maxValueLen, err := httputil.GetInt(r, "max_value_len")
+	maxValueLen, err := getPositiveInt(r, "max_value_len")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -149,13 +149,10 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	fields := r.Form["field"]
 
 	// Obtain limit on the number of top fields entries.
-	fieldsLimit, err := httputil.GetInt(r, "fields_limit")
+	fieldsLimit, err := getPositiveInt(r, "fields_limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
-	}
-	if fieldsLimit < 0 {
-		fieldsLimit = 0
 	}
 
 	// Pipes must be dropped, since it is expected hits are obtained
@@ -328,13 +325,10 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	// Parse limit query arg
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
-	}
-	if limit < 0 {
-		limit = 0
 	}
 
 	// Pipes must be dropped, since it is expected field values are obtained
@@ -396,13 +390,10 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 	}
 
 	// Parse limit query arg
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
-	}
-	if limit < 0 {
-		limit = 0
 	}
 
 	// Pipes must be dropped, since it is expected stream field values are obtained
@@ -431,13 +422,10 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	// Parse limit query arg
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
-	}
-	if limit < 0 {
-		limit = 0
 	}
 
 	// Pipes must be dropped, since it is expected stream ids are obtained
@@ -466,13 +454,10 @@ func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 
 	// Parse limit query arg
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
-	}
-	if limit < 0 {
-		limit = 0
 	}
 
 	// Pipes must be dropped, since it is expected stream are obtained
@@ -904,8 +889,15 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Parse offset query arg
+	offset, err := getPositiveInt(r, "offset")
+	if err != nil {
+		httpserver.Errorf(w, r, "%s", err)
+		return
+	}
+
 	// Parse limit query arg
-	limit, err := httputil.GetInt(r, "limit")
+	limit, err := getPositiveInt(r, "limit")
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -929,10 +921,12 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/stream+json")
 
 	if limit > 0 {
+		// Add '| sort by (_time) desc | offset <offset> | limit <limit>' to the end of the query.
+		// This pattern is automatically optimized during query execution - see https://github.com/VictoriaMetrics/VictoriaLogs/issues/96 .
 		if q.CanReturnLastNResults() {
 			q.AddPipeSortByTimeDesc()
 		}
-		q.AddPipeLimit(uint64(limit))
+		q.AddPipeOffsetLimit(uint64(offset), uint64(limit))
 	}
 
 	writeBlock := func(workerID uint, db *logstorage.DataBlock) {
@@ -1186,4 +1180,15 @@ func parseExtraFiltersJSON(s string) ([]extraFilter, error) {
 		return nil, errOuter
 	}
 	return filters, nil
+}
+
+func getPositiveInt(r *http.Request, argName string) (int, error) {
+	n, err := httputil.GetInt(r, argName)
+	if err != nil {
+		return 0, err
+	}
+	if n < 0 {
+		return 0, fmt.Errorf("%q cannot be smaller than 0; got %d", argName, n)
+	}
+	return n, nil
 }
