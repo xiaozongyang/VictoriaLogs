@@ -3,7 +3,7 @@ module github.com/VictoriaMetrics/VictoriaLogs
 go 1.24.6
 
 require (
-	github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-20250804081214-847398b356ae
+	github.com/VictoriaMetrics/VictoriaMetrics v0.0.0-20250809190513-06f590ee63d0
 	github.com/VictoriaMetrics/easyproto v0.1.4
 	github.com/VictoriaMetrics/metrics v1.39.1
 	github.com/cespare/xxhash/v2 v2.3.0
