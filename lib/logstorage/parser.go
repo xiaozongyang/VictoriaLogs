@@ -592,41 +592,39 @@ func (q *Query) GetFilterTimeRange() (int64, int64) {
 
 // AddTimeFilter adds global filter _time:[start ... end] to q.
 func (q *Query) AddTimeFilter(start, end int64) {
-	startStr := marshalTimestampRFC3339NanoString(nil, start)
-	endStr := marshalTimestampRFC3339NanoString(nil, end)
-
-	start = subNoOverflowInt64(start, q.opts.timeOffset)
-	end = subNoOverflowInt64(end, q.opts.timeOffset)
-
-	end = getMatchingEndTime(end, string(endStr))
-	ft := &filterTime{
-		minTimestamp: start,
-		maxTimestamp: end,
-		stringRepr:   fmt.Sprintf("[%s,%s]", startStr, endStr), // should be matched with parsing logic
-	}
-
 	q.visitSubqueries(func(q *Query) {
-		q.addTimeFilterNoSubqueries(ft)
+		q.addTimeFilterNoSubqueries(start, end)
 	})
 }
 
-func (q *Query) addTimeFilterNoSubqueries(ft *filterTime) {
+func (q *Query) addTimeFilterNoSubqueries(start, end int64) {
 	if q.opts.ignoreGlobalTimeFilter != nil && *q.opts.ignoreGlobalTimeFilter {
 		return
 	}
 
-	ftCopy := *ft
+	timeOffset := q.opts.timeOffset
+
+	startStr := marshalTimestampRFC3339NanoString(nil, start)
+	endStr := marshalTimestampRFC3339NanoString(nil, end)
+	ft := &filterTime{
+		minTimestamp: subNoOverflowInt64(start, timeOffset),
+		maxTimestamp: getMatchingEndTime(subNoOverflowInt64(end, timeOffset), string(endStr)),
+		stringRepr:   fmt.Sprintf("[%s,%s]", startStr, endStr),
+	}
+
 	fa, ok := q.f.(*filterAnd)
 	if ok {
 		filters := make([]filter, len(fa.filters)+1)
-		filters[0] = &ftCopy
+		filters[0] = ft
 		copy(filters[1:], fa.filters)
 		fa.filters = filters
 	} else {
 		q.f = &filterAnd{
-			filters: []filter{&ftCopy, q.f},
+			filters: []filter{ft, q.f},
 		}
 	}
+
+	q.f = flattenFiltersAnd(q.f)
 
 	// Remove `*` filters after adding the `_time` filter, since they are no longer needed.
 	q.f = removeStarFilters(q.f)

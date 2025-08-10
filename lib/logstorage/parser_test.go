@@ -220,12 +220,12 @@ func TestQuery_AddTimeFilter(t *testing.T) {
 
 	// time_offset option
 	f(`options(time_offset=1d3h534ms) *`, `options(time_offset=1d3h534ms) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z]`)
-	f(`options(time_offset = -1.5h) _time:1.3d`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:1.3d`)
-	f(`options(time_offset = -1.5h) _time:1.3d offset 3.5h`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:1.3d offset 3.5h`)
-	f(`options(time_offset = -1.5h) _time:1.3d offset -3.5h`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:1.3d offset -3.5h`)
-	f(`options(time_offset=1h) id:in(_time:5m | keep id)`, `options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:5m | fields id)`)
-	f(`id:in(options(time_offset=1h) _time:5m | keep id)`, `_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:5m | fields id)`)
-	f(`options(time_offset=1d) id:in(options(time_offset=1h) _time:5m | keep id)`, `options(time_offset=1d) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:5m | fields id)`)
+	f(`options(time_offset = -1.5h) _time:2024Z`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2024Z`)
+	f(`options(time_offset = -1.5h) _time:2025Z offset 3.5h`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2025Z offset 3.5h`)
+	f(`options(time_offset = -1.5h) _time:2025Z offset -3.5h`, `options(time_offset=-1.5h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2025Z offset -3.5h`)
+	f(`options(time_offset=1h) id:in(_time:2025Z | keep id)`, `options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2025Z | fields id)`)
+	f(`id:in(options(time_offset=1h) _time:2025Z | keep id)`, `_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2025Z | fields id)`)
+	f(`options(time_offset=1d) id:in(options(time_offset=1h) _time:2025Z | keep id)`, `options(time_offset=1d) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] id:in(options(time_offset=1h) _time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] _time:2025Z | fields id)`)
 
 	// join pipe
 	f(`foo | join by (x) (bar)`, `_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] foo | join by (x) (_time:[2024-12-25T14:56:43Z,2025-01-13T12:45:34Z] bar)`)
@@ -1318,6 +1318,13 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`_time:1h "offSet"`, `_time:1h "offSet"`) // "offset" is a search word, since it is quoted
 	f(`_time:1h (Offset)`, `_time:1h "Offset"`) // "offset" is a search word, since it is in parens
 	f(`_time:1h "and"`, `_time:1h "and"`)       // "and" is a search word, since it is quoted
+
+	// multiple _time filters
+	f(`_time:1h _time:2025Z`, `_time:1h _time:2025Z`)
+	f(`_time:<10h _time:2025Z`, `_time:<10h _time:2025Z`)
+	f(`_time:2025Z _time:[2024-10Z, 2025-03Z]`, `_time:2025Z _time:[2024-10Z,2025-03Z]`)
+	f(`options(time_offset=1h) _time:2025Z _time:[2024-10Z, 2025-03Z]`, `options(time_offset=1h) _time:2025Z _time:[2024-10Z,2025-03Z]`)
+	f(`_time:2025Z _time:2024Z _time:10y`, `_time:2025Z _time:2024Z _time:10y`)
 
 	// dayRange filters
 	f(`_time:day_range[08:00, 20:30)`, `_time:day_range[08:00, 20:30)`)
