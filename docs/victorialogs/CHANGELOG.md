@@ -18,6 +18,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add support for applying a global time offset to the `<q>` [query](https://docs.victoriametrics.com/victorialogs/logsql/#query-syntax) via `options(time_offset=<duration>) <q>` syntax. This is useful for comparing query results on some time range to query results on the same time range with the given offset (similar to the [`offset` modifier in PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/#offset-modifier)). See [these docs](https://docs.victoriametrics.com/victorialogs/logsql/#query-options) and [#78](https://github.com/VictoriaMetrics/VictoriaLogs/issues/78) for details.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): speed up queries, which select big number of logs and end with [`| sort by (_time) desc offset M limit N` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe). E.g. these queries allow building simple pagination over the selected logs. See [#96](https://github.com/VictoriaMetrics/VictoriaLogs/issues/96).
 
 ## [v1.27.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.27.0)
