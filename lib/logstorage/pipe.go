@@ -316,6 +316,12 @@ func parsePipe(lex *lexer) (pipe, error) {
 			return nil, fmt.Errorf("cannot parse 'stream_context' pipe: %w", err)
 		}
 		return pc, nil
+	case lex.isKeyword("time_add"):
+		pa, err := parsePipeTimeAdd(lex)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse 'time_add' pipe: %w", err)
+		}
+		return pa, nil
 	case lex.isKeyword("top"):
 		pt, err := parsePipeTop(lex)
 		if err != nil {

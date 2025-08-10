@@ -340,6 +340,8 @@ It is possible to specify generic offset for the selected time range by appendin
 
 See also [`time_offset` option](#query-options), which allows applying the given offset to all the filters on `_time` field without the need to modify the query.
 
+See also [`time_add` pipe](#time_add-pipe), which allows adding the given duration to the given log field.
+
 Performance tips:
 
 - It is recommended specifying the smallest possible time range during the search, since it reduces the amounts of log entries, which need to be scanned during the query.
@@ -1506,6 +1508,7 @@ LogsQL supports the following pipes:
 - [`stats`](#stats-pipe) calculates various stats over the selected logs.
 - [`stream_context`](#stream_context-pipe) allows selecting surrounding logs in front and after the matching logs
   per each [log stream](https://docs.victoriametrics.com/victorialogs/keyconcepts/#stream-fields).
+- [`time_add`](#time_add-pipe) adds the given duration to the given field containing [RFC3339 time](https://www.rfc-editor.org/rfc/rfc3339).
 - [`top`](#top-pipe) returns top `N` field sets with the maximum number of matching logs.
 - [`union`](#union-pipe) returns results from multiple LogsQL queries.
 - [`uniq`](#uniq-pipe) returns unique log entries.
@@ -3037,6 +3040,35 @@ The `| stream_context` [pipe](#pipes) must go first just after the [filters](#fi
 See also:
 
 - [stream filter](#stream-filter)
+
+### time_add pipe
+
+`<q> | time_add <duration>` adds the given `<duration>` to the [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field).
+The `<duration>` can be in any format described [here](#duration-values).
+
+For example, the following query adds one hour to `_time` field in the selected logs:
+
+```logsql
+_time:5m | time_add 1h
+```
+
+Specify negative duration for subtracting it from the `_time` field:
+
+```logsql
+_time:5m | time_add -1h
+```
+
+Add `at <field_name>` to the end of the `time_add` pipe in order to add the given `<duration>` to the [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+with the given `<field_name>`. For example, the following query adds one week to the field `transaction_time`:
+
+```logsql
+_time:5m | time_add 1w at transaction_time
+```
+
+See also:
+
+- [`_time` filter](#time-filter).
+- [`time_offset` option](#query-options).
 
 ### top pipe
 
