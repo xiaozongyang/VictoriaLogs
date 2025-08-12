@@ -61,6 +61,7 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 	n := limit
 
 	var rowsFound []logRow
+	var lastNonEmptyRows []logRow
 
 	for {
 		q = qOrig.CloneWithTimeFilter(timestamp, start, end)
@@ -71,8 +72,10 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 		}
 
 		if d == 0 || start >= end {
-			// The [start ... end] time range equals to one nanosecond, e.g. it cannot be adjusted more. Return up to limit rows.
+			// The [start ... end] time range equals to one nanosecond, e.g. it cannot be adjusted more. Return up to limit rows
+			// from the found rows and the last non-empty rows.
 			rowsFound = append(rowsFound, rows...)
+			rowsFound = append(rowsFound, lastNonEmptyRows...)
 			rowsFound = getLastNRows(rowsFound, limit)
 			return rowsFound, nil
 		}
@@ -84,6 +87,7 @@ func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, 
 			// The number of found rows on the [start ... end] time range exceeds 2*n,
 			// so reduce the time range to further to [start+d ... end].
 			start += d
+			lastNonEmptyRows = rows
 			continue
 		}
 		if uint64(len(rows)) >= n {

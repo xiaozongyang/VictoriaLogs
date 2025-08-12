@@ -22,6 +22,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add `| time_add <duration>` pipe, which allows adding the given `<duration>` to `_time` field (and to any other field). See [these docs](https://docs.victoriametrics.com/victorialogs/logsql/#time_add-pipe). This is a part of [#78](https://github.com/VictoriaMetrics/VictoriaLogs/issues/78).
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): speed up queries, which select big number of logs and end with [`| sort by (_time) desc offset M limit N` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe). E.g. these queries allow building simple pagination over the selected logs. See [#96](https://github.com/VictoriaMetrics/VictoriaLogs/issues/96).
 
+* BUGFIX: [/select/logsql/query](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs): properly return `limit=N` logs when they have identical `_time` value. Previously an empty result could be returned in this case.
 * BUGFIX: [Syslog data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/): properly parse FreeBSD dialect of Syslog messages, which may miss hostname. See [#571](https://github.com/VictoriaMetrics/VictoriaLogs/issues/571).
 
 ## [v1.27.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.27.0)
