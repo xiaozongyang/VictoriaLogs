@@ -3029,6 +3029,12 @@ func TestQueryGetLastNResultsQuery_Success(t *testing.T) {
 
 	// multiple keep and rm pipes
 	f("* | sort (_time desc) limit 5 | keep _time, x | delete x", "* | fields _time, x | delete x", 0, 5)
+
+	// first pipe
+	f(`* | first 10 (_time desc)`, `*`, 0, 10)
+
+	// last pipe
+	f(`* | last 10 (_time)`, `*`, 0, 10)
 }
 
 func TestQueryGetLastNResultsQuery_Failure(t *testing.T) {
@@ -3086,6 +3092,18 @@ func TestQueryGetLastNResultsQuery_Failure(t *testing.T) {
 	// missing _time field after the sort pipe
 	f("* | sort (_time desc) limit 5 | keep x")
 	f("* | sort (_time desc) limit 5 | rm _time, x")
+
+	// first without descending sorting
+	f("* | first 10 (_time)")
+
+	// last without asscending sorting
+	f("* | last 10 (_time desc)")
+
+	// first with sort by foo additionally to _time
+	f("* | first 10 (_time desc, foo)")
+
+	// last with sort by foo additionally to _time
+	f("* | last 10 (_time, foo)")
 }
 
 func TestQueryCanReturnLastNResults(t *testing.T) {

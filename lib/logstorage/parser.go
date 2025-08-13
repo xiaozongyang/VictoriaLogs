@@ -484,35 +484,13 @@ func (q *Query) GetLastNResultsQuery() (qOpt *Query, offset uint64, limit uint64
 		return nil, 0, 0
 	}
 
-	// The query must end with '| sort by (_time desc) limit N' in order be be eligible for the optimization.
+	// The query must end with one of the following pipes in order to be eligible for the optimization:
+	// - 'sort by (_time desc) offset <offset> limit <limit>'
+	// - 'first <limit> by (_time desc)'
+	// - 'last <limit> by (_time)'
 	pLast := pipes[len(pipes)-1]
-	ps, ok := pLast.(*pipeSort)
+	offset, limit, ok := getOffsetLimitFromPipe(pLast)
 	if !ok {
-		return nil, 0, 0
-	}
-	if ps.limit <= 0 || ps.limit > 50_000 {
-		return nil, 0, 0
-	}
-	if ps.offset > 50_000 {
-		return nil, 0, 0
-	}
-	if ps.rankFieldName != "" {
-		return nil, 0, 0
-	}
-	if len(ps.partitionByFields) > 0 {
-		return nil, 0, 0
-	}
-	if len(ps.byFields) != 1 {
-		return nil, 0, 0
-	}
-	if ps.byFields[0].name != "_time" {
-		return nil, 0, 0
-	}
-	isDesc := ps.byFields[0].isDesc
-	if ps.isDesc {
-		isDesc = !isDesc
-	}
-	if !isDesc {
 		return nil, 0, 0
 	}
 
@@ -529,7 +507,49 @@ func (q *Query) GetLastNResultsQuery() (qOpt *Query, offset uint64, limit uint64
 	}
 
 	// The query is eligible for last N results optimization.
-	return qCopy, ps.offset, ps.limit
+	return qCopy, offset, limit
+}
+
+func getOffsetLimitFromPipe(p pipe) (uint64, uint64, bool) {
+	switch t := p.(type) {
+	case *pipeSort:
+		return getOffsetLimitFromPipeSort(t)
+	case *pipeFirst:
+		return getOffsetLimitFromPipeSort(t.ps)
+	case *pipeLast:
+		return getOffsetLimitFromPipeSort(t.ps)
+	default:
+		return 0, 0, false
+	}
+}
+
+func getOffsetLimitFromPipeSort(ps *pipeSort) (uint64, uint64, bool) {
+	if ps.limit <= 0 || ps.limit > 50_000 {
+		return 0, 0, false
+	}
+	if ps.offset > 50_000 {
+		return 0, 0, false
+	}
+	if ps.rankFieldName != "" {
+		return 0, 0, false
+	}
+	if len(ps.partitionByFields) > 0 {
+		return 0, 0, false
+	}
+	if len(ps.byFields) != 1 {
+		return 0, 0, false
+	}
+	if ps.byFields[0].name != "_time" {
+		return 0, 0, false
+	}
+	isDesc := ps.byFields[0].isDesc
+	if ps.isDesc {
+		isDesc = !isDesc
+	}
+	if !isDesc {
+		return 0, 0, false
+	}
+	return ps.offset, ps.limit, true
 }
 
 // CanReturnLastNResults returns true if time range filter at q can be adjusted for returning the last N results with the biggest _time values.
