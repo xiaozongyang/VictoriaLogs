@@ -14,6 +14,7 @@ VictoriaLogs is a fast easy to use database for logs.
 
 Here are some resources and information about VictoriaLogs:
 
+- Playgrounds: [playground for the built-in web UI](https://play-vmlogs.victoriametrics.com/), [playground for Grafana plugin for VictoriaLogs](https://play-grafana.victoriametrics.com/d/be5zidev72m80f/k8s-logs-via-victorialogs)
 - [Documentation](https://docs.victoriametrics.com/victorialogs/)
 - Available: [Binary releases](https://github.com/VictoriaMetrics/VictoriaLogs/releases/latest), docker images [Docker Hub](https://hub.docker.com/r/victoriametrics/victoria-logs/) and [Quay](https://quay.io/repository/victoriametrics/victoria-logs), [Source code](https://github.com/VictoriaMetrics/VictoriaLogs)
 - Deployment types: [Single-node version](https://docs.victoriametrics.com/victorialogs/), [Cluster version](https://docs.victoriametrics.com/victorialogs/cluster/)

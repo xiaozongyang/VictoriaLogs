@@ -37,7 +37,7 @@ you can join it via [Slack Inviter](https://slack.victoriametrics.com/).
 See [quick start docs](https://docs.victoriametrics.com/victorialogs/quickstart/) for start working with VictoriaLogs.
 
 If you want playing with VictoriaLogs web UI and [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/) query language,
-then go to [VictoriaLogs demo playground](https://play-vmlogs.victoriametrics.com/).
+then go to [VictoriaLogs demo playground](https://play-vmlogs.victoriametrics.com/) and to [Grafana plugin playground for VictoriaLogs](https://play-grafana.victoriametrics.com/d/be5zidev72m80f/k8s-logs-via-victorialogs).
 
 ## Tuning
 
