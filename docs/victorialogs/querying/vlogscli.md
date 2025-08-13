@@ -285,7 +285,13 @@ Follow these steps in order to build `vlogscli` from source code:
   cd VictoriaLogs
   ```
 
-- Build `vlogscli`:
+- Checkout to the needed commit if needed:
+
+  ```sh
+  git checkout <commit-hash-here>
+  ```
+
+- Build `vlogscli`. It requires Go installed on your computer. See [how to install Go](https://golang.org/doc/install):
 
   ```sh
   make vlogscli
@@ -298,3 +304,12 @@ Follow these steps in order to build `vlogscli` from source code:
   ```
 
 Replace `victoria-los-host:9428` with the needed hostname of the VictoriaLogs to query.
+
+An alternative approach is to build `vlogscli` inside Docker builder container. This approach doesn't require Go installation,
+but it requires Docker installed on your computer. See [how to install Docker](https://docs.docker.com/engine/install/):
+
+```sh
+make vlogscli-prod
+```
+
+This will build `vlogscli-prod` executable inside the `bin` folder.

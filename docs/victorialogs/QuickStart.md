@@ -86,7 +86,13 @@ Follow the following steps in order to build VictoriaLogs from source code:
   cd VictoriaLogs
   ```
 
-- Build VictoriaLogs:
+- Checkout to the needed commit if needed:
+
+  ```sh
+  git checkout <commit-hash-here>
+  ```
+
+- Build VictoriaLogs (it needs Go installed on your computer. See [how to install Go](https://golang.org/doc/install)):
 
   ```sh
   make victoria-logs
@@ -103,6 +109,15 @@ and [querying](https://docs.victoriametrics.com/victorialogs/querying/) at the T
 It has no any external dependencies, so it may run in various environments without additional setup and configuration.
 VictoriaLogs automatically adapts to the available CPU and RAM resources. It also automatically setups and creates
 the needed indexes during [data ingestion](https://docs.victoriametrics.com/victorialogs/data-ingestion/).
+
+An alternative approach is to build victoria-logs inside Docker builder container. This approach doesn't require Go installation,
+but it requires Docker installed on your computer. See [how to install Docker](https://docs.docker.com/engine/install/):
+
+```sh
+make victoria-logs-prod
+```
+
+This will build `victoria-logs-prod` executable inside the `bin` folder.
 
 See also:
 
