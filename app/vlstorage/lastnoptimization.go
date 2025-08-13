@@ -18,7 +18,7 @@ func runOptimizedLastNResultsQuery(ctx context.Context, tenantIDs []logstorage.T
 		return err
 	}
 	if uint64(len(rows)) > offset {
-		rows = rows[:uint64(len(rows))-offset]
+		rows = rows[offset:]
 	}
 
 	var db logstorage.DataBlock
@@ -177,13 +177,13 @@ type logRow struct {
 func getLastNRows(rows []logRow, limit uint64) []logRow {
 	sortLogRows(rows)
 	if uint64(len(rows)) > limit {
-		rows = rows[uint64(len(rows))-limit:]
+		rows = rows[:limit]
 	}
 	return rows
 }
 
 func sortLogRows(rows []logRow) {
 	sort.Slice(rows, func(i, j int) bool {
-		return rows[i].timestamp < rows[j].timestamp
+		return rows[i].timestamp > rows[j].timestamp
 	})
 }
