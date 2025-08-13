@@ -116,7 +116,8 @@ func newStorageNode(s *Storage, addr string, ac *promauth.Config, isTLS bool) *s
 func (sn *storageNode) runQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, processBlock func(db *logstorage.DataBlock)) error {
 	args := sn.getCommonArgs(QueryProtocolVersion, tenantIDs, q)
 	reqURL := sn.getRequestURL("/internal/select/query")
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, strings.NewReader(args.Encode()))
+	reqBody := strings.NewReader(args.Encode())
+	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, reqBody)
 	if err != nil {
 		logger.Panicf("BUG: unexpected error when creating a request: %s", err)
 	}
@@ -251,7 +252,8 @@ func (sn *storageNode) getValuesWithHits(ctx context.Context, path string, args 
 
 func (sn *storageNode) executeRequestAt(ctx context.Context, path string, args url.Values) ([]byte, error) {
 	reqURL := sn.getRequestURL(path)
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, strings.NewReader(args.Encode()))
+	reqBody := strings.NewReader(args.Encode())
+	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, reqBody)
 	if err != nil {
 		logger.Panicf("BUG: unexpected error when creating a request: %s", err)
 	}
