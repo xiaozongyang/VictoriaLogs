@@ -18,6 +18,10 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+## [v1.28.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.28.0)
+
+Released at 2025-08-13
+
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): optimize queries ending with [`| first N by (_time desc)`](https://docs.victoriametrics.com/victorialogs/logsql/#first-pipe) and [`| last N by (_time)`](https://docs.victoriametrics.com/victorialogs/logsql/#last-pipe) in the same way as queried ending with [`| sort by (_time desc) limit N`](https://docs.victoriametrics.com/victorialogs/logsql/#sort-pipe) are optimized. This is a follow-up for [#46](https://github.com/VictoriaMetrics/VictoriaLogs/issues/46).
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add support for applying a global time offset to the `<q>` [query](https://docs.victoriametrics.com/victorialogs/logsql/#query-syntax) via `options(time_offset=<duration>) <q>` syntax. This is useful for comparing query results on some time range to query results on the same time range with the given offset (similar to the [`offset` modifier in PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/#offset-modifier)). See [these docs](https://docs.victoriametrics.com/victorialogs/logsql/#query-options) and [#78](https://github.com/VictoriaMetrics/VictoriaLogs/issues/78) for details.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add `| time_add <duration>` pipe, which allows adding the given `<duration>` to `_time` field (and to any other field). See [these docs](https://docs.victoriametrics.com/victorialogs/logsql/#time_add-pipe). This is a part of [#78](https://github.com/VictoriaMetrics/VictoriaLogs/issues/78).
