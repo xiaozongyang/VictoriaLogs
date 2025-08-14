@@ -115,31 +115,13 @@ func newStorageNode(s *Storage, addr string, ac *promauth.Config, isTLS bool) *s
 
 func (sn *storageNode) runQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, processBlock func(db *logstorage.DataBlock)) error {
 	args := sn.getCommonArgs(QueryProtocolVersion, tenantIDs, q)
-	reqURL := sn.getRequestURL("/internal/select/query")
-	reqBody := strings.NewReader(args.Encode())
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, reqBody)
-	if err != nil {
-		logger.Panicf("BUG: unexpected error when creating a request: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if err := sn.ac.SetHeaders(req, true); err != nil {
-		return fmt.Errorf("cannot set auth headers for %q: %w", reqURL, err)
-	}
 
-	// send the request to the storage node
-	resp, err := sn.c.Do(req)
+	path := "/internal/select/query"
+	responseBody, reqURL, err := sn.getResponseBodyForPathAndArgs(ctx, path, args)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		responseBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			responseBody = []byte(err.Error())
-		}
-		return fmt.Errorf("unexpected status code for the request to %q: %d; want %d; response: %q", reqURL, resp.StatusCode, http.StatusOK, responseBody)
-	}
+	defer responseBody.Close()
 
 	// read the response
 	var dataLenBuf [8]byte
@@ -147,20 +129,20 @@ func (sn *storageNode) runQuery(ctx context.Context, tenantIDs []logstorage.Tena
 	var db logstorage.DataBlock
 	var valuesBuf []string
 	for {
-		if _, err := io.ReadFull(resp.Body, dataLenBuf[:]); err != nil {
+		if _, err := io.ReadFull(responseBody, dataLenBuf[:]); err != nil {
 			if errors.Is(err, io.EOF) {
 				// The end of response stream
 				return nil
 			}
-			return fmt.Errorf("cannot read block size from %q: %w", reqURL, err)
+			return fmt.Errorf("cannot read block size from %q: %w", path, err)
 		}
 		blockLen := encoding.UnmarshalUint64(dataLenBuf[:])
 		if blockLen > math.MaxInt {
-			return fmt.Errorf("too big data block: %d bytes; mustn't exceed %v bytes", blockLen, math.MaxInt)
+			return fmt.Errorf("too big data block read from %q: %d bytes; mustn't exceed %v bytes", reqURL, blockLen, math.MaxInt)
 		}
 
 		buf = slicesutil.SetLength(buf, int(blockLen))
-		if _, err := io.ReadFull(resp.Body, buf); err != nil {
+		if _, err := io.ReadFull(responseBody, buf); err != nil {
 			return fmt.Errorf("cannot read block with size of %d bytes from %q: %w", blockLen, reqURL, err)
 		}
 
@@ -243,43 +225,23 @@ func (sn *storageNode) getCommonArgs(version string, tenantIDs []logstorage.Tena
 }
 
 func (sn *storageNode) getValuesWithHits(ctx context.Context, path string, args url.Values) ([]logstorage.ValueWithHits, error) {
-	data, err := sn.executeRequestAt(ctx, path, args)
+	data, err := sn.getResponseForPathAndArgs(ctx, path, args)
 	if err != nil {
 		return nil, err
 	}
 	return unmarshalValuesWithHits(data)
 }
 
-func (sn *storageNode) executeRequestAt(ctx context.Context, path string, args url.Values) ([]byte, error) {
-	reqURL := sn.getRequestURL(path)
-	reqBody := strings.NewReader(args.Encode())
-	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, reqBody)
-	if err != nil {
-		logger.Panicf("BUG: unexpected error when creating a request: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if err := sn.ac.SetHeaders(req, true); err != nil {
-		return nil, fmt.Errorf("cannot set auth headers for %q: %w", reqURL, err)
-	}
-
-	// send the request to the storage node
-	resp, err := sn.c.Do(req)
+func (sn *storageNode) getResponseForPathAndArgs(ctx context.Context, path string, args url.Values) ([]byte, error) {
+	responseBody, reqURL, err := sn.getResponseBodyForPathAndArgs(ctx, path, args)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		responseBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			responseBody = []byte(err.Error())
-		}
-		return nil, fmt.Errorf("unexpected status code for the request to %q: %d; want %d; response: %q", reqURL, resp.StatusCode, http.StatusOK, responseBody)
-	}
+	defer responseBody.Close()
 
 	// read the response
 	var bb bytesutil.ByteBuffer
-	if _, err := bb.ReadFrom(resp.Body); err != nil {
+	if _, err := bb.ReadFrom(responseBody); err != nil {
 		return nil, fmt.Errorf("cannot read response from %q: %w", reqURL, err)
 	}
 
@@ -293,6 +255,36 @@ func (sn *storageNode) executeRequestAt(ctx context.Context, path string, args u
 		return nil, err
 	}
 	return bb.B[bbLen:], nil
+}
+
+func (sn *storageNode) getResponseBodyForPathAndArgs(ctx context.Context, path string, args url.Values) (io.ReadCloser, string, error) {
+	reqURL := sn.getRequestURL(path)
+	reqBody := strings.NewReader(args.Encode())
+	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, reqBody)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error when creating a request for %q: %s", reqURL, err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err := sn.ac.SetHeaders(req, true); err != nil {
+		return nil, "", fmt.Errorf("cannot set auth headers at %q: %w", reqURL, err)
+	}
+
+	// send the request to the storage node
+	resp, err := sn.c.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("cannot execute request at %q: %w", reqURL, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			responseBody = []byte(err.Error())
+		}
+		_ = resp.Body.Close()
+		return nil, "", fmt.Errorf("unexpected response status code from %q: %d; want %d; response: %q", reqURL, resp.StatusCode, http.StatusOK, responseBody)
+	}
+
+	return resp.Body, reqURL, nil
 }
 
 func (sn *storageNode) getRequestURL(path string) string {
