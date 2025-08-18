@@ -1548,7 +1548,7 @@ func parseFilter(lex *lexer) (filter, error) {
 
 	// Verify the first token in the filter doesn't match pipe names.
 	firstToken := strings.ToLower(lex.rawToken)
-	if _, ok := pipeNames[firstToken]; ok {
+	if firstToken == "by" || isPipeName(firstToken) || isStatsFuncName(firstToken) {
 		return nil, fmt.Errorf("query filter cannot start with pipe keyword %q; see https://docs.victoriametrics.com/victorialogs/logsql/#query-syntax; "+
 			"please put the first word of the filter into quotes", firstToken)
 	}
@@ -3220,7 +3220,7 @@ func needQuoteToken(s string) bool {
 	if _, ok := reservedKeywords[sLower]; ok {
 		return true
 	}
-	if _, ok := pipeNames[sLower]; ok {
+	if sLower == "by" || isPipeName(sLower) || isStatsFuncName(sLower) {
 		return true
 	}
 	for _, r := range s {

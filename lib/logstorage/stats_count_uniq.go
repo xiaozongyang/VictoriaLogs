@@ -840,7 +840,7 @@ func (sup *statsCountUniqProcessor) limitReached(su *statsCountUniq) bool {
 	return sup.entriesCount() > limit
 }
 
-func parseStatsCountUniq(lex *lexer) (*statsCountUniq, error) {
+func parseStatsCountUniq(lex *lexer) (statsFunc, error) {
 	fields, err := parseStatsFuncFields(lex, "count_uniq")
 	if err != nil {
 		return nil, err

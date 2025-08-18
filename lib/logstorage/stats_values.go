@@ -223,7 +223,7 @@ func (svp *statsValuesProcessor) limitReached(sv *statsValues) bool {
 	return limit > 0 && uint64(len(svp.values)) > limit
 }
 
-func parseStatsValues(lex *lexer) (*statsValues, error) {
+func parseStatsValues(lex *lexer) (statsFunc, error) {
 	fieldFilters, err := parseStatsFuncFieldFilters(lex, "values")
 	if err != nil {
 		return nil, err

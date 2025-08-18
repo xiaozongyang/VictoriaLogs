@@ -390,7 +390,7 @@ func marshalJSONArray(dst []byte, items []string) []byte {
 	return dst
 }
 
-func parseStatsUniqValues(lex *lexer) (*statsUniqValues, error) {
+func parseStatsUniqValues(lex *lexer) (statsFunc, error) {
 	fieldFilters, err := parseStatsFuncFieldFilters(lex, "uniq_values")
 	if err != nil {
 		return nil, err

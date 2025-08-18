@@ -160,7 +160,7 @@ func (svp *statsJSONValuesProcessor) limitReached(sv *statsJSONValues) bool {
 	return limit > 0 && uint64(len(svp.values)) > limit
 }
 
-func parseStatsJSONValues(lex *lexer) (*statsJSONValues, error) {
+func parseStatsJSONValues(lex *lexer) (statsFunc, error) {
 	fieldFilters, err := parseStatsFuncFieldFilters(lex, "json_values")
 	if err != nil {
 		return nil, err
