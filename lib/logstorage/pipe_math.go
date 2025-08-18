@@ -79,6 +79,13 @@ func (pm *pipeMath) canLiveTail() bool {
 	return true
 }
 
+func (pm *pipeMath) canReturnLastNResults() bool {
+	// TODO: if math clobbers _time field, then it may impossible returning lastN results.
+	// TODO: properly verify this case.
+
+	return true
+}
+
 func (me *mathEntry) String() string {
 	s := me.expr.String()
 	if isMathBinaryOp(me.expr.op) {

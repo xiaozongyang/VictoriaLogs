@@ -45,6 +45,10 @@ func (pu *pipeUnpackWords) canLiveTail() bool {
 	return true
 }
 
+func (pu *pipeUnpackWords) canReturnLastNResults() bool {
+	return pu.dstField != "_time"
+}
+
 func (pu *pipeUnpackWords) hasFilterInWithQuery() bool {
 	return false
 }

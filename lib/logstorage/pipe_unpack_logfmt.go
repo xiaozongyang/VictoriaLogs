@@ -57,6 +57,12 @@ func (pu *pipeUnpackLogfmt) canLiveTail() bool {
 	return true
 }
 
+func (pu *pipeUnpackLogfmt) canReturnLastNResults() bool {
+	// TODO: verify that the unpacked fields do not overwrite _time with non-timestamp values.
+
+	return true
+}
+
 func (pu *pipeUnpackLogfmt) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForUnpackPipe(pu.fromField, pu.fieldFilters, pu.keepOriginalFields, pu.skipEmptyResults, pu.iff, pf)
 }

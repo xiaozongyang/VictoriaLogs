@@ -89,6 +89,10 @@ func (ps *pipeSort) canLiveTail() bool {
 	return false
 }
 
+func (ps *pipeSort) canReturnLastNResults() bool {
+	return false
+}
+
 func (ps *pipeSort) updateNeededFields(pf *prefixfilter.Filter) {
 	if pf.MatchNothing() {
 		return

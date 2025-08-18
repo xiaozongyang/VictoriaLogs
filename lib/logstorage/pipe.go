@@ -26,6 +26,11 @@ type pipe interface {
 	// See https://docs.victoriametrics.com/victorialogs/querying/#live-tailing
 	canLiveTail() bool
 
+	// canReturnLastNResults must return true if the given pipe can return last N results ordered by _time desc
+	//
+	// The pipe can return last N results if it doesn't modify the _time field.
+	canReturnLastNResults() bool
+
 	// updateNeededFields must update pf with fields it needs and not needs at the input.
 	updateNeededFields(pf *prefixfilter.Filter)
 

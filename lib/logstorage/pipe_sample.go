@@ -33,6 +33,10 @@ func (ps *pipeSample) canLiveTail() bool {
 	return true
 }
 
+func (ps *pipeSample) canReturnLastNResults() bool {
+	return false
+}
+
 func (ps *pipeSample) updateNeededFields(_ *prefixfilter.Filter) {
 	// nothing to do
 }

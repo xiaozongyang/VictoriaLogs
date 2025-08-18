@@ -50,6 +50,10 @@ func (pl *pipeLast) canLiveTail() bool {
 	return false
 }
 
+func (pl *pipeLast) canReturnLastNResults() bool {
+	return false
+}
+
 func (pl *pipeLast) updateNeededFields(pf *prefixfilter.Filter) {
 	pl.ps.updateNeededFields(pf)
 }

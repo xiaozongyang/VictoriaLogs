@@ -56,6 +56,10 @@ func (pu *pipeUniq) canLiveTail() bool {
 	return false
 }
 
+func (pu *pipeUniq) canReturnLastNResults() bool {
+	return false
+}
+
 func (pu *pipeUniq) updateNeededFields(pf *prefixfilter.Filter) {
 	pf.Reset()
 	pf.AddAllowFilters(pu.byFields)

@@ -47,6 +47,10 @@ func (pr *pipeReplaceRegexp) canLiveTail() bool {
 	return true
 }
 
+func (pr *pipeReplaceRegexp) canReturnLastNResults() bool {
+	return true
+}
+
 func (pr *pipeReplaceRegexp) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForUpdatePipe(pf, pr.field, pr.iff)
 }

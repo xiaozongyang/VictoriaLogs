@@ -47,6 +47,10 @@ func (pr *pipeReplace) canLiveTail() bool {
 	return true
 }
 
+func (pr *pipeReplace) canReturnLastNResults() bool {
+	return true
+}
+
 func (pr *pipeReplace) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForUpdatePipe(pf, pr.field, pr.iff)
 }

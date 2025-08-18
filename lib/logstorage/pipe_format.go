@@ -58,6 +58,10 @@ func (pf *pipeFormat) canLiveTail() bool {
 	return true
 }
 
+func (pf *pipeFormat) canReturnLastNResults() bool {
+	return pf.resultField != "_time"
+}
+
 func (pf *pipeFormat) updateNeededFields(f *prefixfilter.Filter) {
 	if f.MatchNothing() {
 		if pf.iff != nil {

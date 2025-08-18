@@ -45,6 +45,10 @@ func (pc *pipeCollapseNums) canLiveTail() bool {
 	return true
 }
 
+func (pc *pipeCollapseNums) canReturnLastNResults() bool {
+	return true
+}
+
 func (pc *pipeCollapseNums) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForUpdatePipe(pf, pc.field, pc.iff)
 }

@@ -26,6 +26,10 @@ func (pl *pipeLimit) canLiveTail() bool {
 	return false
 }
 
+func (pl *pipeLimit) canReturnLastNResults() bool {
+	return false
+}
+
 func (pl *pipeLimit) updateNeededFields(_ *prefixfilter.Filter) {
 	// nothing to do
 }

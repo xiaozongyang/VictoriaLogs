@@ -78,6 +78,10 @@ func (pt *pipeTop) canLiveTail() bool {
 	return false
 }
 
+func (pt *pipeTop) canReturnLastNResults() bool {
+	return false
+}
+
 func (pt *pipeTop) updateNeededFields(pf *prefixfilter.Filter) {
 	pf.Reset()
 	pf.AddAllowFilters(pt.byFields)

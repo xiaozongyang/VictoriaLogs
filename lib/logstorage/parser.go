@@ -555,32 +555,8 @@ func getOffsetLimitFromPipeSort(ps *pipeSort) (uint64, uint64, bool) {
 // CanReturnLastNResults returns true if time range filter at q can be adjusted for returning the last N results with the biggest _time values.
 func (q *Query) CanReturnLastNResults() bool {
 	for _, p := range q.pipes {
-		switch t := p.(type) {
-		case *pipeBlockStats,
-			*pipeBlocksCount,
-			*pipeFacets,
-			*pipeFieldNames,
-			*pipeFieldValues,
-			*pipeFirst,
-			*pipeJoin,
-			*pipeLast,
-			*pipeLimit,
-			*pipeOffset,
-			*pipeTop,
-			*pipeSample,
-			*pipeSort,
-			*pipeStats,
-			*pipeUnion,
-			*pipeUniq:
+		if !p.canReturnLastNResults() {
 			return false
-		case *pipeFields:
-			if !prefixfilter.MatchFilters(t.fieldFilters, "_time") {
-				return false
-			}
-		case *pipeDelete:
-			if prefixfilter.MatchFilters(t.fieldFilters, "_time") {
-				return false
-			}
 		}
 	}
 	return true

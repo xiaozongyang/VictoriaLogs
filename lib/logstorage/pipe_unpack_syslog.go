@@ -56,6 +56,10 @@ func (pu *pipeUnpackSyslog) canLiveTail() bool {
 	return true
 }
 
+func (pu *pipeUnpackSyslog) canReturnLastNResults() bool {
+	return true
+}
+
 func (pu *pipeUnpackSyslog) updateNeededFields(pf *prefixfilter.Filter) {
 	updateNeededFieldsForUnpackPipe(pu.fromField, nil, pu.keepOriginalFields, false, pu.iff, pf)
 }

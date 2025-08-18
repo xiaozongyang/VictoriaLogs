@@ -50,6 +50,10 @@ func (pj *pipeJoin) canLiveTail() bool {
 	return true
 }
 
+func (pj *pipeJoin) canReturnLastNResults() bool {
+	return false
+}
+
 func (pj *pipeJoin) hasFilterInWithQuery() bool {
 	// Do not check for in(...) filters at pj.q, since they are checked separately during pj.q execution.
 	return false

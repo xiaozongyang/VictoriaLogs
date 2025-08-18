@@ -64,6 +64,10 @@ func (pc *pipeStreamContext) canLiveTail() bool {
 	return false
 }
 
+func (pc *pipeStreamContext) canReturnLastNResults() bool {
+	return false
+}
+
 func (pc *pipeStreamContext) withRunQuery(runQuery runQueryFunc, fieldsFilter *prefixfilter.Filter) pipe {
 	pcNew := *pc
 	pcNew.runQuery = runQuery

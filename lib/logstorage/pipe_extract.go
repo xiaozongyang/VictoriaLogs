@@ -51,6 +51,12 @@ func (pe *pipeExtract) canLiveTail() bool {
 	return true
 }
 
+func (pe *pipeExtract) canReturnLastNResults() bool {
+	// TODO: properly verify that the extracted fields do not overwrite the _time field with non-timestamp values.
+
+	return true
+}
+
 func (pe *pipeExtract) hasFilterInWithQuery() bool {
 	return pe.iff.hasFilterInWithQuery()
 }

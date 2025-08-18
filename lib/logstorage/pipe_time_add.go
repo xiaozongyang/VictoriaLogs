@@ -35,6 +35,10 @@ func (pa *pipeTimeAdd) canLiveTail() bool {
 	return true
 }
 
+func (pa *pipeTimeAdd) canReturnLastNResults() bool {
+	return true
+}
+
 func (pa *pipeTimeAdd) updateNeededFields(_ *prefixfilter.Filter) {
 	// do nothing
 }

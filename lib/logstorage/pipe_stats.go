@@ -198,6 +198,10 @@ func (ps *pipeStats) canLiveTail() bool {
 	return false
 }
 
+func (ps *pipeStats) canReturnLastNResults() bool {
+	return false
+}
+
 func (ps *pipeStats) updateNeededFields(pf *prefixfilter.Filter) {
 	if ps.mode.needImportState() {
 		ps.updateNeededFieldsLocal(pf)
