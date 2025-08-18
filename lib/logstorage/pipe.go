@@ -187,6 +187,7 @@ func initPipeParsers() {
 		"filter":            parsePipeFilter,
 		"first":             parsePipeFirst,
 		"format":            parsePipeFormat,
+		"generate_sequence": parsePipeGenerateSequence,
 		"hash":              parsePipeHash,
 		"join":              parsePipeJoin,
 		"json_array_len":    parsePipeJSONArrayLen,
