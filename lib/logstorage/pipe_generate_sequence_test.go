@@ -26,6 +26,57 @@ func TestParsePipeGenerateSequenceFailure(t *testing.T) {
 	f(`generate_sequence foo`)
 }
 
+func TestPipeGenerateSequence(t *testing.T) {
+	f := func(pipeStr string, rows, rowsExpected [][]Field) {
+		t.Helper()
+		expectPipeResults(t, pipeStr, rows, rowsExpected)
+	}
+
+	// non-empty input
+	f(`generate_sequence 3`, [][]Field{
+		{
+			{"foo", `bar`},
+			{"bar", `abcde`},
+		},
+	}, [][]Field{
+		{
+			{"_msg", `0`},
+		},
+		{
+			{"_msg", `1`},
+		},
+		{
+			{"_msg", `2`},
+		},
+	})
+	f(`generate_sequence 1`, [][]Field{
+		{
+			{"foo", `bar`},
+			{"bar", `abcde`},
+		},
+		{
+			{"x", `y`},
+		},
+	}, [][]Field{
+		{
+			{"_msg", `0`},
+		},
+	})
+
+	// empty input
+	f(`generate_sequence 3`, [][]Field{}, [][]Field{
+		{
+			{"_msg", `0`},
+		},
+		{
+			{"_msg", `1`},
+		},
+		{
+			{"_msg", `2`},
+		},
+	})
+}
+
 func TestPipeGenerateSequenceUpdateNeededFields(t *testing.T) {
 	f := func(s string, allowFilters, denyFilters, allowFiltersExpected, denyFiltersExpected string) {
 		t.Helper()
