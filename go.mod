@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/VictoriaMetrics/metricsql v0.84.6 // indirect
+	github.com/VictoriaMetrics/metricsql v0.84.7 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/valyala/gozstd v1.22.0 // indirect
