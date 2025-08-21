@@ -311,7 +311,7 @@ benchmark-pure:
 vendor-update:
 	go get -u ./lib/...
 	go get -u ./app/...
-	go mod tidy -compat=1.24
+	go mod tidy -compat=1.25
 	go mod vendor
 
 app-local:
