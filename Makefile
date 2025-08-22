@@ -118,19 +118,14 @@ vlutils-crossbuild: \
 	vlutils-openbsd-amd64 \
 	vlutils-windows-amd64
 
-publish-final-images:
-	PKG_TAG=$(TAG) APP_NAME=victoria-logs $(MAKE) publish-via-docker-from-rc && \
-	PKG_TAG=$(TAG) APP_NAME=vlagent $(MAKE) publish-via-docker-from-rc && \
-	PKG_TAG=$(TAG) APP_NAME=vlogscli $(MAKE) publish-via-docker-from-rc && \
-	PKG_TAG=$(TAG) $(MAKE) publish-latest
-
 publish-latest:
 	PKG_TAG=$(TAG) APP_NAME=victoria-logs $(MAKE) publish-via-docker-latest
 	PKG_TAG=$(TAG) APP_NAME=vlogscli $(MAKE) publish-via-docker-latest
 
 publish-release:
 	rm -rf bin/*
-	git checkout $(TAG) && $(MAKE) release && $(MAKE) publish
+	git checkout $(TAG) && $(MAKE) release && $(MAKE) publish && \
+		git checkout $(TAG)-enterprise && $(MAKE) release && $(MAKE) publish
 
 release: \
 	release-victoria-logs \

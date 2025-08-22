@@ -129,14 +129,6 @@ publish-via-docker:
 		$(APP_NAME)-linux-ppc64le-prod \
 		$(APP_NAME)-linux-386-prod
 
-publish-via-docker-from-rc:
-	$(foreach registry,$(DOCKER_REGISTRIES),\
-		docker buildx imagetools create --tag $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):$(PKG_TAG) $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):$(PKG_TAG)$(EXTRA_DOCKER_TAG_SUFFIX); \
-	)
-	$(foreach registry,$(DOCKER_REGISTRIES),\
-		docker buildx imagetools create --tag $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):$(PKG_TAG)-scratch $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):$(PKG_TAG)$(EXTRA_DOCKER_TAG_SUFFIX)-scratch; \
-	)
-
 publish-via-docker-latest:
 	$(foreach registry,$(DOCKER_REGISTRIES),\
 		docker buildx imagetools create --tag $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):latest $(registry)/$(DOCKER_NAMESPACE)/$(APP_NAME):$(PKG_TAG); \
