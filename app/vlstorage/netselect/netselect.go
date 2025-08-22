@@ -275,7 +275,7 @@ func (sn *storageNode) getResponseBodyForPathAndArgs(ctx context.Context, path s
 	if err != nil {
 		return nil, "", &httpserver.ErrorWithStatusCode{
 			Err:        fmt.Errorf("cannot connect to storage node at %q: %w", reqURL, err),
-			StatusCode: 502,
+			StatusCode: http.StatusBadGateway,
 		}
 	}
 
