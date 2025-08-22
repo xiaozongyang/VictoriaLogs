@@ -18,6 +18,10 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+## [v1.29.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.29.0)
+
+Released at 2025-08-22
+
 * FEATURE: introduce [Enterprise version of VictoriaLogs](https://docs.victoriametrics.com/victoriametrics/enterprise/). See [the list of Enterprise features](https://docs.victoriametrics.com/victoriametrics/enterprise/#victorialogs-enterprise-features). See also [#120](https://github.com/VictoriaMetrics/VictoriaLogs/issues/120).
 * FEATURE: improve the scalability of data ingestion on systems with big number of CPU cores. Previously only up to 40 CPU cores were used during logs' ingestion into VictoriaLogs on AMD64 and ARM64 architectures, while the remaining CPU cores were idle. Remove the scalability bottleneck by switching from [musl-based](https://wiki.musl-libc.org/) to [glibc-based](https://en.wikipedia.org/wiki/Glibc) cross-compiler. This improved the data ingestion speed on a host with hundreds of CPU cores by more than 4x. See [#517](https://github.com/VictoriaMetrics/VictoriaLogs/issues/517#issuecomment-3167039079).
 * FEATURE: upgrade Go builder from Go1.24.6 to Go1.25.0. See [Go1.25.0 release notes](https://go.dev/doc/go1.25).
