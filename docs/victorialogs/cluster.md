@@ -187,6 +187,9 @@ All the VictoriaLogs cluster components must run in protected internal network w
 must be used in front of `vlinsert` and `vlselect` for authorizing access to these components from the Internet.
 See [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/).
 
+
+### TLS
+
 By default `vlinsert` and `vlselect` communicate with `vlstorage` via unencrypted HTTP. This is OK if all these components are located
 in the same protected internal network. This isn't OK if these components communicate over the Internet, since a third party can intercept / modify
 the transferred data. It is recommended switching to HTTPS in this case:
@@ -220,7 +223,8 @@ It is also recommended authorizing HTTPS requests to `vlstorage` via Basic Auth:
 Another option is to use third-party HTTP proxies such as [vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/), `nginx`, etc. for authorizing and encrypting communications
 between VictoriaLogs cluster components over untrusted networks.
 
-By default, all the components (vlinsert, vlselect, vlstorage) support all the HTTP endpoints including `/insert/*` and `/select/*`. It's recommended to disable select endpoints on `vlinsert` and insert endpoints on `vlselect`:
+By default, all the components (vlinsert, vlselect, vlstorage) support all the HTTP endpoints including `/insert/*` and `/select/*`.
+It is recommended to disable select endpoints on `vlinsert` and insert endpoints on `vlselect`:
 
 ```sh
 # Disable select endpoints on vlinsert
@@ -230,7 +234,29 @@ By default, all the components (vlinsert, vlselect, vlstorage) support all the H
 ./victoria-logs-prod -storageNode=... -insert.disable
 ```
 
-This helps prevent sending select requests to `vlinsert` nodes or insert requests to `vlselect` nodes in case of misconfiguration in the authorization proxy in front of the `vlinsert` and `vlselect` nodes.
+This helps prevent sending select requests to `vlinsert` nodes or insert requests to `vlselect` nodes in case of misconfiguration in the authorization proxy
+in front of the `vlinsert` and `vlselect` nodes.
+
+See also [mTLS](#mtls).
+
+### mTLS
+
+[Enterprise version of VictoriaLogs](https://docs.victoriametrics.com/victoriametrics/enterprise/) supports the ability to verify client TLS certificates
+at the `vlstorage` side for TLS connections established from `vlinsert` and `vlselect` nodes (aka [mTLS](https://en.wikipedia.org/wiki/Mutual_authentication#mTLS)).
+See [TLS docs](#tls) for details on how to set up TLS communications between VictoriaLogs cluster nodes.
+
+mTLS authentication can be enabled by passing the `-mtls` command-line flag to `vlstorage` node additionally to the `-tls` command-line flag.
+In this case it verifies TLS client certificates for connections from `vlinsert` and `vlselect` at the address specified via `-httpListenAddr` command-line flag.
+
+The client TLS certificate must be specified at `vlinsert` and `vlselect` nodes via `-storageNode.tlsCertFile` and `-storageNode.tlsKeyFile` command-line flags.
+
+By default the system-wide [root CA certificates](https://en.wikipedia.org/wiki/Root_certificate) are used for verifying client TLS certificates.
+The `-mtlsCAFile` command-line flag can be used at `vlstorage` for pointing to custom root CA certificates.
+
+See also [generic mTLS docs for VictoriaLogs](https://docs.victoriametrics.com/victorialogs/#mtls).
+
+[Enterprise version of VictoriaLogs](https://docs.victoriametrics.com/victoriametrics/enterprise/) can be downloaded and evaluated for free
+from [the releases page](https://github.com/VictoriaMetrics/VictoriaLogs/releases/latest). See [how to request a free trial license](https://victoriametrics.com/products/enterprise/trial/).
 
 ## Quick start
 
