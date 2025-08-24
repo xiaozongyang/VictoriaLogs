@@ -288,10 +288,6 @@ func ProcessFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Pipes must be dropped, since it is expected field names are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
-
 	// Obtain field names for the given query
 	fieldNames, err := vlstorage.GetFieldNames(ctx, tenantIDs, q)
 	if err != nil {
@@ -328,10 +324,6 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Pipes must be dropped, since it is expected field values are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
-
 	// Obtain unique values for the given field
 	values, err := vlstorage.GetFieldValues(ctx, tenantIDs, q, fieldName, uint64(limit))
 	if err != nil {
@@ -353,10 +345,6 @@ func ProcessStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
-
-	// Pipes must be dropped, since it is expected stream field names are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
 
 	// Obtain stream field names for the given query
 	names, err := vlstorage.GetStreamFieldNames(ctx, tenantIDs, q)
@@ -393,10 +381,6 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 		return
 	}
 
-	// Pipes must be dropped, since it is expected stream field values are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
-
 	// Obtain stream field values for the given query and the given fieldName
 	values, err := vlstorage.GetStreamFieldValues(ctx, tenantIDs, q, fieldName, uint64(limit))
 	if err != nil {
@@ -425,10 +409,6 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 		return
 	}
 
-	// Pipes must be dropped, since it is expected stream ids are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
-
 	// Obtain streamIDs for the given query
 	streamIDs, err := vlstorage.GetStreamIDs(ctx, tenantIDs, q, uint64(limit))
 	if err != nil {
@@ -456,10 +436,6 @@ func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
-
-	// Pipes must be dropped, since it is expected stream are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
 
 	// Obtain streams for the given query
 	streams, err := vlstorage.GetStreams(ctx, tenantIDs, q, uint64(limit))
