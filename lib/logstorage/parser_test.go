@@ -3577,13 +3577,13 @@ func TestQuery_AddExtraFilters(t *testing.T) {
 	f(`*`, "", `*`)
 	f(`_time:5m`, "", `_time:5m`)
 	f(`foo _time:5m`, "", `foo _time:5m`)
-	f(`*`, "foo:=bar", "foo:=bar *")
+	f(`*`, "foo:=bar", "foo:=bar")
 	f("_time:5m", `"fo o":="=ba:r !"`, `"fo o":="=ba:r !" _time:5m`)
-	f("_time:5m {a=b}", `"fo o":="=ba:r !" and x:=y`, `"fo o":="=ba:r !" x:=y {a="b"} _time:5m`)
+	f("_time:5m {a=b}", `"fo o":="=ba:r !" and x:=y`, `{a="b"} "fo o":="=ba:r !" x:=y _time:5m`)
 	f(`a or (b c)`, `foo:=bar`, `foo:=bar (a or b c)`)
 
 	// extra stream filters
-	f(`*`, `{foo="bar",baz!="x"}`, `{foo="bar",baz!="x"} *`)
+	f(`*`, `{foo="bar",baz!="x"}`, `{foo="bar",baz!="x"}`)
 
 	// mixed filters
 	f(`c`, `{foo="bar",baz!="x"} a:~b`, `{foo="bar",baz!="x"} a:~b c`)

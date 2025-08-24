@@ -670,6 +670,8 @@ func (q *Query) addExtraFiltersNoSubqueries(filters []filter) {
 			filters: append(filters, q.f),
 		}
 	}
+
+	q.optimizeNoSubqueries()
 }
 
 // AddPipeSortByTimeDesc adds `| sort (_time) desc` pipe to q.
