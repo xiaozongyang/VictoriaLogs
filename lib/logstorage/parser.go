@@ -414,11 +414,17 @@ func (q *Query) AddFacetsPipe(limit, maxValuesPerField, maxValueLen int, keepCon
 
 // AddCountByTimePipe adds '| stats by (_time:step offset off, field1, ..., fieldN) count() hits' to the end of q.
 func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
+	// Drop pipes from q, which modify or delete _time field, since they make impossible to calculate stats grouped by _time.
+	q.dropTimeModificationPipes()
+
 	{
 		// add 'stats by (_time:step offset off, fields) count() hits'
 		stepStr := string(marshalDurationString(nil, step))
-		offsetStr := string(marshalDurationString(nil, off))
-		byFieldsStr := "_time:" + stepStr + " offset " + offsetStr
+		byFieldsStr := "_time:" + stepStr
+		if off != 0 {
+			offsetStr := string(marshalDurationString(nil, off))
+			byFieldsStr += " offset " + offsetStr
+		}
 		for _, f := range fields {
 			byFieldsStr += ", " + quoteTokenIfNeeded(f)
 		}
@@ -436,6 +442,18 @@ func (q *Query) AddCountByTimePipe(step, off int64, fields []string) {
 		s := fmt.Sprintf("sort by (%s)", sortFieldsStr)
 
 		q.mustAppendPipe(s)
+	}
+}
+
+// dropTimeModificationPipes drops pipes from q, which modify
+func (q *Query) dropTimeModificationPipes() {
+	for i, p := range q.pipes {
+		if !p.canReturnLastNResults() {
+			// Drop the rest of the pipes, including the current pipe,
+			// since it modified or deletes the _time field.
+			q.pipes = q.pipes[:i]
+			return
+		}
 	}
 }
 

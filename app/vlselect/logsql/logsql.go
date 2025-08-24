@@ -155,10 +155,7 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Pipes must be dropped, since it is expected hits are obtained
-	// from the real logs stored in the database.
-	q.DropAllPipes()
-
+	// Add a pipe, which calculates hits over time with the given step and offset for the given fields.
 	q.AddCountByTimePipe(int64(step), int64(offset), fields)
 
 	var mLock sync.Mutex

@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [`/select/logsql/hits`](https://docs.victoriametrics.com/victorialogs/querying/#querying-hits-stats): take into account [pipes](https://docs.victoriametrics.com/victorialogs/logsql/#pipes), which do not modify the [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field), when calculating hits for the given query on the given time range. Previously all the pipes in the query were ignored. This could lead to unexpected results. For example, `* | extract "statusCode=<statusCode>," | filter statusCode:200` query was returning hits for all the logs instead of returning hits only for the logs containing the given `statusCode`.
+
 * BUGFIX: [vlselect](https://docs.victoriametrics.com/victorialogs/cluster/): return `502 Bad Gateway` http response code when one of the `vlstorage` servers are unavailable. Previously `400 Bad Request` http response code was incorrectly returned in this case. This helps building proper failover scheme in high-availability setups for VictoriaLogs. See [#576](https://github.com/VictoriaMetrics/VictoriaLogs/issues/576).
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix incorrect logs sorting on the Group tab. See [#579](https://github.com/VictoriaMetrics/VictoriaLogs/issues/579) for details.
 

@@ -3624,3 +3624,35 @@ func TestToFieldsFilters(t *testing.T) {
 	f([]string{"a*"}, []string{"foo", "bar*"}, ` | fields a*`)
 	f([]string{"a*"}, []string{"foo", "bar*", "abc", "aa*"}, ` | delete aa*, abc | fields a*`)
 }
+
+func TestQuery_AddCountByTimePipe(t *testing.T) {
+	f := func(qStr string, step, offset int64, fields []string, resultExpected string) {
+		t.Helper()
+
+		q, err := ParseQuery(qStr)
+		if err != nil {
+			t.Fatalf("unexpected error when parsing [%s]: %s", qStr, err)
+		}
+		q.AddCountByTimePipe(step, offset, fields)
+
+		result := q.String()
+		if result != resultExpected {
+			t.Fatalf("unexpected result\ngot\n%s\nwant\n%s", result, resultExpected)
+		}
+	}
+
+	// simple filter
+	f("*", nsecsPerMinute, 0, nil, "* | stats by (_time:1m) count(*) as hits | sort by (_time)")
+	f("*", nsecsPerMinute, 2*nsecsPerHour, nil, "* | stats by (_time:1m offset 2h) count(*) as hits | sort by (_time)")
+	f("foo bar:baz", nsecsPerMinute, -2*nsecsPerHour, nil, "foo bar:baz | stats by (_time:1m offset -2h) count(*) as hits | sort by (_time)")
+
+	// pipes, which do not change _time field
+	f("* | extract 'abc<de>fg' | filter de:='qwer'", nsecsPerMinute, 0, nil, `* | extract "abc<de>fg" | filter de:=qwer | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+
+	// pipes, which change _time field
+	f("* | extract 'abc<de>fg' | filter de:='qwer' | stats count()", nsecsPerMinute, 0, nil, `* | extract "abc<de>fg" | filter de:=qwer | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+	f("* | extract 'abc<de>fg' | sort by (x)", nsecsPerMinute, 0, nil, `* | extract "abc<de>fg" | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+	f("* | extract 'abc<de>fg' | sort by (_time)", nsecsPerMinute, 0, nil, `* | extract "abc<de>fg" | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+	f("* | count()", nsecsPerMinute, 0, nil, `* | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+	f("* | uniq (x)", nsecsPerMinute, 0, nil, `* | stats by (_time:1m) count(*) as hits | sort by (_time)`)
+}
