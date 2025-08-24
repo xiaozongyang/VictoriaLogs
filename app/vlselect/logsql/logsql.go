@@ -31,7 +31,7 @@ import (
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-facets
 func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -56,9 +56,9 @@ func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	// Pipes must be dropped, since it is expected facets are obtained
 	// from the real logs stored in the database.
-	q.DropAllPipes()
+	ca.q.DropAllPipes()
 
-	q.AddFacetsPipe(limit, maxValuesPerField, maxValueLen, keepConstFields)
+	ca.q.AddFacetsPipe(limit, maxValuesPerField, maxValueLen, keepConstFields)
 
 	var mLock sync.Mutex
 	m := make(map[string][]facetEntry)
@@ -94,8 +94,8 @@ func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Execute the query
-	if err := vlstorage.RunQuery(ctx, tenantIDs, q, writeBlock); err != nil {
-		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", q, err)
+	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ type facetEntry struct {
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-hits-stats
 func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -156,7 +156,7 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	// Add a pipe, which calculates hits over time with the given step and offset for the given fields.
-	q.AddCountByTimePipe(int64(step), int64(offset), fields)
+	ca.q.AddCountByTimePipe(int64(step), int64(offset), fields)
 
 	var mLock sync.Mutex
 	m := make(map[string]*hitsSeries)
@@ -199,15 +199,17 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	// Execute the query
-	if err := vlstorage.RunQuery(ctx, tenantIDs, q, writeBlock); err != nil {
-		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", q, err)
+	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
 
 	m = getTopHitsSeries(m, fieldsLimit)
 
-	// Write response
+	// Write response headers
 	w.Header().Set("Content-Type", "application/json")
+
+	// Write response
 	WriteHitsSeries(w, m)
 }
 
@@ -282,14 +284,14 @@ func (hs *hitsSeries) Less(i, j int) bool {
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-field-names
 func ProcessFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
 
 	// Obtain field names for the given query
-	fieldNames, err := vlstorage.GetFieldNames(ctx, tenantIDs, q)
+	fieldNames, err := vlstorage.GetFieldNames(ctx, ca.tenantIDs, ca.q)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain field names: %s", err)
 		return
@@ -304,7 +306,7 @@ func ProcessFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-field-values
 func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -325,7 +327,7 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	// Obtain unique values for the given field
-	values, err := vlstorage.GetFieldValues(ctx, tenantIDs, q, fieldName, uint64(limit))
+	values, err := vlstorage.GetFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain values for field %q: %s", fieldName, err)
 		return
@@ -340,14 +342,14 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-stream-field-names
 func ProcessStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
 
 	// Obtain stream field names for the given query
-	names, err := vlstorage.GetStreamFieldNames(ctx, tenantIDs, q)
+	names, err := vlstorage.GetStreamFieldNames(ctx, ca.tenantIDs, ca.q)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field names: %s", err)
 	}
@@ -361,7 +363,7 @@ func ProcessStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-stream-field-values
 func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -382,7 +384,7 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 	}
 
 	// Obtain stream field values for the given query and the given fieldName
-	values, err := vlstorage.GetStreamFieldValues(ctx, tenantIDs, q, fieldName, uint64(limit))
+	values, err := vlstorage.GetStreamFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field values: %s", err)
 	}
@@ -396,7 +398,7 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-stream_ids
 func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -410,7 +412,7 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	// Obtain streamIDs for the given query
-	streamIDs, err := vlstorage.GetStreamIDs(ctx, tenantIDs, q, uint64(limit))
+	streamIDs, err := vlstorage.GetStreamIDs(ctx, ca.tenantIDs, ca.q, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream_ids: %s", err)
 	}
@@ -424,7 +426,7 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-streams
 func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -438,7 +440,7 @@ func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 
 	// Obtain streams for the given query
-	streams, err := vlstorage.GetStreams(ctx, tenantIDs, q, uint64(limit))
+	streams, err := vlstorage.GetStreams(ctx, ca.tenantIDs, ca.q, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain streams: %s", err)
 	}
@@ -455,14 +457,14 @@ func ProcessLiveTailRequest(ctx context.Context, w http.ResponseWriter, r *http.
 	liveTailRequests.Inc()
 	defer liveTailRequests.Dec()
 
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
 	}
-	if !q.CanLiveTail() {
+	if !ca.q.CanLiveTail() {
 		httpserver.Errorf(w, r, "the query [%s] cannot be used in live tailing; "+
-			"see https://docs.victoriametrics.com/victorialogs/querying/#live-tailing for details", q)
+			"see https://docs.victoriametrics.com/victorialogs/querying/#live-tailing for details", ca.q)
 		return
 	}
 
@@ -505,10 +507,11 @@ func ProcessLiveTailRequest(ctx context.Context, w http.ResponseWriter, r *http.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	flusher.Flush()
 
+	q := ca.q
 	qOrig := q
 	for {
 		q = qOrig.CloneWithTimeFilter(end, start, end)
-		if err := vlstorage.RunQuery(ctxWithCancel, tenantIDs, q, tp.writeBlock); err != nil {
+		if err := vlstorage.RunQuery(ctxWithCancel, ca.tenantIDs, q, tp.writeBlock); err != nil {
 			httpserver.Errorf(w, r, "cannot execute tail query [%s]: %s", q, err)
 			return
 		}
@@ -649,7 +652,7 @@ func (tp *tailProcessor) getTailRows() ([][]logstorage.Field, error) {
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-log-range-stats
 func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.SendPrometheusError(w, r, err)
 		return
@@ -674,7 +677,7 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 
 	// Obtain `by(...)` fields from the last `| stats` pipe in q.
 	// Add `_time:step` to the `by(...)` list.
-	byFields, err := q.GetStatsByFieldsAddGroupingByTime(int64(step))
+	byFields, err := ca.q.GetStatsByFieldsAddGroupingByTime(int64(step))
 	if err != nil {
 		httpserver.SendPrometheusError(w, r, err)
 		return
@@ -695,7 +698,7 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 			// Do not move q.GetTimestamp() outside writeBlock, since ts
 			// must be initialized to query timestamp for every processed log row.
 			// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/8312
-			ts := q.GetTimestamp()
+			ts := ca.q.GetTimestamp()
 			labels := make([]logstorage.Field, 0, len(byFields))
 			for j, c := range columns {
 				if c.Name == "_time" {
@@ -743,13 +746,13 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
-	if err := vlstorage.RunQuery(ctx, tenantIDs, q, writeBlock); err != nil {
-		err = fmt.Errorf("cannot execute query [%s]: %s", q, err)
+	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
 		return
 	}
 
-	// Sort the collected stats by time
+	// Sort the collected stats by _time
 	rows := make([]*statsSeries, 0, len(m))
 	for _, ss := range m {
 		points := ss.Points
@@ -762,7 +765,17 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 		return rows[i].key < rows[j].key
 	})
 
-	w.Header().Set("Content-Type", "application/json")
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+
+	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end), extra_filters and extra_stream_filters
+	// It is used by the built-in web UI in order to adjust the selected time range.
+	// See https://github.com/VictoriaMetrics/VictoriaLogs/issues/558#issuecomment-3180070712
+	h.Set("VL-Selected-Time-Range", fmt.Sprintf("[%d,%d]", ca.minTimestamp, ca.maxTimestamp))
+
+	// Write response
 	WriteStatsQueryRangeResponse(w, rows)
 }
 
@@ -783,14 +796,14 @@ type statsPoint struct {
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-log-stats
 func ProcessStatsQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.SendPrometheusError(w, r, err)
 		return
 	}
 
 	// Obtain `by(...)` fields from the last `| stats` pipe in q.
-	byFields, err := q.GetStatsByFields()
+	byFields, err := ca.q.GetStatsByFields()
 	if err != nil {
 		httpserver.SendPrometheusError(w, r, err)
 		return
@@ -799,7 +812,7 @@ func ProcessStatsQueryRequest(ctx context.Context, w http.ResponseWriter, r *htt
 	var rows []statsRow
 	var rowsLock sync.Mutex
 
-	timestamp := q.GetTimestamp()
+	timestamp := ca.q.GetTimestamp()
 	writeBlock := func(_ uint, db *logstorage.DataBlock) {
 		rowsCount := db.RowsCount()
 		columns := db.Columns
@@ -835,8 +848,8 @@ func ProcessStatsQueryRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
-	if err := vlstorage.RunQuery(ctx, tenantIDs, q, writeBlock); err != nil {
-		err = fmt.Errorf("cannot execute query [%s]: %s", q, err)
+	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
 		return
 	}
@@ -856,7 +869,7 @@ type statsRow struct {
 //
 // See https://docs.victoriametrics.com/victorialogs/querying/#querying-logs
 func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	q, tenantIDs, err := parseCommonArgs(r)
+	ca, err := parseCommonArgs(r)
 	if err != nil {
 		httpserver.Errorf(w, r, "%s", err)
 		return
@@ -896,10 +909,10 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 	if limit > 0 {
 		// Add '| sort by (_time) desc | offset <offset> | limit <limit>' to the end of the query.
 		// This pattern is automatically optimized during query execution - see https://github.com/VictoriaMetrics/VictoriaLogs/issues/96 .
-		if q.CanReturnLastNResults() {
-			q.AddPipeSortByTimeDesc()
+		if ca.q.CanReturnLastNResults() {
+			ca.q.AddPipeSortByTimeDesc()
 		}
-		q.AddPipeOffsetLimit(uint64(offset), uint64(limit))
+		ca.q.AddPipeOffsetLimit(uint64(offset), uint64(limit))
 	}
 
 	writeBlock := func(workerID uint, db *logstorage.DataBlock) {
@@ -918,8 +931,8 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	if err := vlstorage.RunQuery(ctx, tenantIDs, q, writeBlock); err != nil {
-		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", q, err)
+	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
 }
@@ -954,28 +967,41 @@ func (bw *bufferedWriter) FlushIgnoreErrors() {
 	bw.buf = bw.buf[:0]
 }
 
-func parseCommonArgs(r *http.Request) (*logstorage.Query, []logstorage.TenantID, error) {
+type commonArgs struct {
+	// The parsed query. It includes optional extra_filters, extra_stream_filters and (start, end) time range filter.
+	q *logstorage.Query
+
+	// tenantIDs is the list of tenantIDs to query.
+	tenantIDs []logstorage.TenantID
+
+	// minTimestamp and maxTimestamp is the time range specified in the original query,
+	// without taking into account extra_filters, extra_stream_filters and (start, end) query args.
+	minTimestamp int64
+	maxTimestamp int64
+}
+
+func parseCommonArgs(r *http.Request) (*commonArgs, error) {
 	// Extract tenantID
 	tenantID, err := logstorage.GetTenantIDFromRequest(r)
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot obtain tenantID: %w", err)
+		return nil, fmt.Errorf("cannot obtain tenantID: %w", err)
 	}
 	tenantIDs := []logstorage.TenantID{tenantID}
 
 	// Parse optional start and end args
 	start, okStart, err := getTimeNsec(r, "start")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	end, okEnd, err := getTimeNsec(r, "end")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Parse optional time arg
 	timestamp, okTime, err := getTimeNsec(r, "time")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !okTime {
 		// If time arg is missing, then evaluate query either at the end timestamp (if it is set)
@@ -995,8 +1021,10 @@ func parseCommonArgs(r *http.Request) (*logstorage.Query, []logstorage.TenantID,
 	qStr := r.FormValue("query")
 	q, err := logstorage.ParseQueryAtTimestamp(qStr, timestamp)
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot parse query [%s]: %s", qStr, err)
+		return nil, fmt.Errorf("cannot parse query [%s]: %s", qStr, err)
 	}
+
+	minTimestamp, maxTimestamp := q.GetFilterTimeRange()
 
 	if okStart || okEnd {
 		// Add _time:[start, end] filter if start or end args were set.
@@ -1013,7 +1041,7 @@ func parseCommonArgs(r *http.Request) (*logstorage.Query, []logstorage.TenantID,
 	for _, extraFiltersStr := range r.Form["extra_filters"] {
 		extraFilters, err := parseExtraFilters(extraFiltersStr)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		q.AddExtraFilters(extraFilters)
 	}
@@ -1022,12 +1050,28 @@ func parseCommonArgs(r *http.Request) (*logstorage.Query, []logstorage.TenantID,
 	for _, extraStreamFiltersStr := range r.Form["extra_stream_filters"] {
 		extraStreamFilters, err := parseExtraStreamFilters(extraStreamFiltersStr)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		q.AddExtraFilters(extraStreamFilters)
 	}
 
-	return q, tenantIDs, nil
+	if minTimestamp == math.MinInt64 || maxTimestamp == math.MaxInt64 {
+		// The original time range is open-bound.
+		// Override it with the (start, end) time range in this case.
+		minTimestamp, maxTimestamp = q.GetFilterTimeRange()
+		if maxTimestamp == math.MaxInt64 {
+			maxTimestamp = timestamp
+		}
+	}
+
+	ca := &commonArgs{
+		q:         q,
+		tenantIDs: tenantIDs,
+
+		minTimestamp: minTimestamp,
+		maxTimestamp: maxTimestamp,
+	}
+	return ca, nil
 }
 
 func getTimeNsec(r *http.Request, argName string) (int64, bool, error) {
