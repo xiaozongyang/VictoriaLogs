@@ -207,7 +207,14 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	m = getTopHitsSeries(m, fieldsLimit)
 
 	// Write response headers
-	w.Header().Set("Content-Type", "application/json")
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+
+	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end) and extra_filters
+	// It is used by the built-in web UI in order to adjust the selected time range.
+	// See https://github.com/VictoriaMetrics/VictoriaLogs/issues/558#issuecomment-3180070712
+	h.Set("VL-Selected-Time-Range", ca.getSelectedTimeRange())
 
 	// Write response
 	WriteHitsSeries(w, m)
@@ -770,10 +777,10 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 
 	h.Set("Content-Type", "application/json")
 
-	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end), extra_filters and extra_stream_filters
+	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end) and extra_filters
 	// It is used by the built-in web UI in order to adjust the selected time range.
 	// See https://github.com/VictoriaMetrics/VictoriaLogs/issues/558#issuecomment-3180070712
-	h.Set("VL-Selected-Time-Range", fmt.Sprintf("[%d,%d]", ca.minTimestamp, ca.maxTimestamp))
+	h.Set("VL-Selected-Time-Range", ca.getSelectedTimeRange())
 
 	// Write response
 	WriteStatsQueryRangeResponse(w, rows)
@@ -975,9 +982,13 @@ type commonArgs struct {
 	tenantIDs []logstorage.TenantID
 
 	// minTimestamp and maxTimestamp is the time range specified in the original query,
-	// without taking into account extra_filters, extra_stream_filters and (start, end) query args.
+	// without taking into account extra_filters and (start, end) query args.
 	minTimestamp int64
 	maxTimestamp int64
+}
+
+func (ca *commonArgs) getSelectedTimeRange() string {
+	return fmt.Sprintf("[%d,%d]", ca.minTimestamp, ca.maxTimestamp)
 }
 
 func parseCommonArgs(r *http.Request) (*commonArgs, error) {
