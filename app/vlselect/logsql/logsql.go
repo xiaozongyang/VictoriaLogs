@@ -94,13 +94,19 @@ func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Re
 	}
 
 	// Execute the query
+	startTime := time.Now()
 	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
 
+	// Write response header
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write response
-	w.Header().Set("Content-Type", "application/json")
 	WriteFacetsResponse(w, m)
 }
 
@@ -199,6 +205,7 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	// Execute the query
+	startTime := time.Now()
 	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
@@ -210,6 +217,7 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	h := w.Header()
 
 	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
 
 	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end) and extra_filters
 	// It is used by the built-in web UI in order to adjust the selected time range.
@@ -298,14 +306,20 @@ func ProcessFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	// Obtain field names for the given query
+	startTime := time.Now()
 	fieldNames, err := vlstorage.GetFieldNames(ctx, ca.tenantIDs, ca.q)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain field names: %s", err)
 		return
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, fieldNames)
 }
 
@@ -334,14 +348,20 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	// Obtain unique values for the given field
+	startTime := time.Now()
 	values, err := vlstorage.GetFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain values for field %q: %s", fieldName, err)
 		return
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, values)
 }
 
@@ -356,13 +376,19 @@ func ProcessStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 	}
 
 	// Obtain stream field names for the given query
+	startTime := time.Now()
 	names, err := vlstorage.GetStreamFieldNames(ctx, ca.tenantIDs, ca.q)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field names: %s", err)
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, names)
 }
 
@@ -391,13 +417,19 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 	}
 
 	// Obtain stream field values for the given query and the given fieldName
+	startTime := time.Now()
 	values, err := vlstorage.GetStreamFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field values: %s", err)
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, values)
 }
 
@@ -419,13 +451,19 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	// Obtain streamIDs for the given query
+	startTime := time.Now()
 	streamIDs, err := vlstorage.GetStreamIDs(ctx, ca.tenantIDs, ca.q, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream_ids: %s", err)
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, streamIDs)
 }
 
@@ -447,13 +485,19 @@ func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 
 	// Obtain streams for the given query
+	startTime := time.Now()
 	streams, err := vlstorage.GetStreams(ctx, ca.tenantIDs, ca.q, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain streams: %s", err)
 	}
 
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
 	// Write results
-	w.Header().Set("Content-Type", "application/json")
 	WriteValuesWithHitsJSON(w, streams)
 }
 
@@ -753,6 +797,8 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
+	// Execute the request.
+	startTime := time.Now()
 	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
 		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
@@ -776,6 +822,7 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 	h := w.Header()
 
 	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
 
 	// The VL-Selected-Time-Range contains the time range specified in the query, not counting (start, end) and extra_filters
 	// It is used by the built-in web UI in order to adjust the selected time range.
@@ -855,13 +902,21 @@ func ProcessStatsQueryRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
+	// Execute the query
+	startTime := time.Now()
 	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
 		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	// Write response headers
+	h := w.Header()
+
+	h.Set("Content-Type", "application/json")
+	writeRequestDuration(h, startTime)
+
+	// Write response
 	WriteStatsQueryResponse(w, rows)
 }
 
@@ -911,8 +966,6 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}()
 
-	w.Header().Set("Content-Type", "application/stream+json")
-
 	if limit > 0 {
 		// Add '| sort by (_time) desc | offset <offset> | limit <limit>' to the end of the query.
 		// This pattern is automatically optimized during query execution - see https://github.com/VictoriaMetrics/VictoriaLogs/issues/96 .
@@ -922,7 +975,17 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		ca.q.AddPipeOffsetLimit(uint64(offset), uint64(limit))
 	}
 
+	startTime := time.Now()
+	writeResponseHeadersOnce := sync.OnceFunc(func() {
+		// Write response headers
+		h := w.Header()
+
+		h.Set("Content-Type", "application/stream+json")
+		writeRequestDuration(h, startTime)
+	})
+
 	writeBlock := func(workerID uint, db *logstorage.DataBlock) {
+		writeResponseHeadersOnce()
 		rowsCount := db.RowsCount()
 		if rowsCount == 0 {
 			return
@@ -938,10 +1001,12 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
+	// Execute the query
 	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
+
 }
 
 type syncWriter struct {
@@ -1219,4 +1284,8 @@ func getPositiveInt(r *http.Request, argName string) (int, error) {
 		return 0, fmt.Errorf("%q cannot be smaller than 0; got %d", argName, n)
 	}
 	return n, nil
+}
+
+func writeRequestDuration(h http.Header, startTime time.Time) {
+	h.Set("VL-Request-Duration-Seconds", fmt.Sprintf("%.3f", time.Since(startTime).Seconds()))
 }
