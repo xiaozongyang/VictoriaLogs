@@ -13,8 +13,15 @@ import (
 //
 // See https://docs.victoriametrics.com/victorialogs/logsql/#replace_regexp-pipe
 type pipeReplaceRegexp struct {
-	field       string
-	re          *regexp.Regexp
+	field string
+
+	// re is the compiled regular expression
+	re *regexp.Regexp
+
+	// reStr contains string representation for the re.
+	reStr string
+
+	// replacement is the replacement string for the matching re.
 	replacement string
 
 	// limit limits the number of replacements, which can be performed
@@ -29,7 +36,7 @@ func (pr *pipeReplaceRegexp) String() string {
 	if pr.iff != nil {
 		s += " " + pr.iff.String()
 	}
-	s += fmt.Sprintf(" (%s, %s)", quoteTokenIfNeeded(pr.re.String()), quoteTokenIfNeeded(pr.replacement))
+	s += fmt.Sprintf(" (%s, %s)", quoteTokenIfNeeded(pr.reStr), quoteTokenIfNeeded(pr.replacement))
 	if pr.field != "_msg" {
 		s += " at " + quoteTokenIfNeeded(pr.field)
 	}
@@ -109,7 +116,7 @@ func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse reStr in 'replace_regexp': %w", err)
 	}
-	re, err := regexp.Compile(reStr)
+	re, err := regexpCompile(reStr)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse regexp %q in 'replace_regexp': %w", reStr, err)
 	}
@@ -152,6 +159,7 @@ func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 	pr := &pipeReplaceRegexp{
 		field:       field,
 		re:          re,
+		reStr:       reStr,
 		replacement: replacement,
 		limit:       limit,
 		iff:         iff,
