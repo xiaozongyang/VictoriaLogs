@@ -606,34 +606,26 @@ func (q *Query) GetFilterTimeRange() (int64, int64) {
 
 // AddTimeFilter adds global filter _time:[start ... end] to q.
 func (q *Query) AddTimeFilter(start, end int64) {
-	q.AddTimeFilterWithEndStr(start, end, "")
-}
-
-// AddTimeFilterWithEndStr adds global filter _time:[start ... end] to q using the original end string for precision.
-func (q *Query) AddTimeFilterWithEndStr(start, end int64, endStr string) {
 	q.visitSubqueries(func(q *Query) {
-		q.addTimeFilterNoSubqueries(start, end, endStr)
+		q.addTimeFilterNoSubqueries(start, end)
 	})
 }
 
-func (q *Query) addTimeFilterNoSubqueries(start, end int64, endStr string) {
+func (q *Query) addTimeFilterNoSubqueries(start, end int64) {
 	if q.opts.ignoreGlobalTimeFilter != nil && *q.opts.ignoreGlobalTimeFilter {
 		return
 	}
 
 	timeOffset := q.opts.timeOffset
 
-	startStr := marshalTimestampRFC3339NanoString(nil, start)
-	var endStrForDisplay string
-	if endStr != "" {
-		endStrForDisplay = endStr
-	} else {
-		endStrForDisplay = string(marshalTimestampRFC3339NanoString(nil, end))
-	}
 	ft := &filterTime{
 		minTimestamp: subNoOverflowInt64(start, timeOffset),
-		maxTimestamp: getMatchingEndTime(subNoOverflowInt64(end, timeOffset), endStrForDisplay),
-		stringRepr:   fmt.Sprintf("[%s,%s]", startStr, endStrForDisplay),
+		maxTimestamp: subNoOverflowInt64(end, timeOffset),
+
+		// use nanosecond representation in the query here in order to avoid
+		// automatic adjustement of the end timestamp for its' string representation.
+		// See https://github.com/VictoriaMetrics/VictoriaLogs/issues/587
+		stringRepr: fmt.Sprintf("[%d,%d]", start, end),
 	}
 
 	fa, ok := q.f.(*filterAnd)
@@ -1359,7 +1351,12 @@ func ParseQueryAtTimestamp(s string, timestamp int64) (*Query, error) {
 func (q *Query) initStatsRateFuncsFromTimeFilter() {
 	start, end := q.GetFilterTimeRange()
 	if start != math.MinInt64 && end != math.MaxInt64 {
-		step := end - start + 1 // 1 is needed in order to include [start ... end] in the step.
+		step := end - start
+
+		// The increment of the step is needed in order to cover the
+		// last nanosecond in the selected time range [start, end].
+		step++
+
 		q.initStatsRateFuncs(step)
 	}
 }
@@ -2828,7 +2825,7 @@ func parseFilterTime(lex *lexer) (*filterTime, error) {
 	stringRepr += startTimeString + "," + endTimeString
 	if endTimeInclude {
 		stringRepr += "]"
-		endTime = getMatchingEndTime(endTime, endTimeString)
+		endTime = AdjustEndTimestamp(endTime, endTimeString)
 	} else {
 		stringRepr += ")"
 		endTime--
@@ -2912,7 +2909,7 @@ func parseFilterTimeLt(lex *lexer) (*filterTime, error) {
 		if prefix == "<" {
 			endTime--
 		} else {
-			endTime = getMatchingEndTime(endTime, endTimeString)
+			endTime = AdjustEndTimestamp(endTime, endTimeString)
 		}
 		ft := &filterTime{
 			minTimestamp: math.MinInt64,
@@ -2957,7 +2954,7 @@ func parseFilterTimeEq(lex *lexer) (*filterTime, error) {
 		}
 		// Round to milliseconds
 		startTime := nsecs
-		endTime := getMatchingEndTime(startTime, s)
+		endTime := AdjustEndTimestamp(startTime, s)
 		ft := &filterTime{
 			minTimestamp: startTime,
 			maxTimestamp: endTime,
@@ -2988,27 +2985,53 @@ func isLikelyTimestamp(lex *lexer) bool {
 	return lex.isKeyword("now") || startsWithYear(lex.token)
 }
 
-func getMatchingEndTime(startTime int64, stringRepr string) int64 {
-	tStart := time.Unix(0, startTime).UTC()
+// AdjustEndTimestamp returns an adjusted timestamp for t according to its' string representation tStr.
+//
+// The t is adjusted for the interval [start, tStr] depending on the tStr value. Examples:
+//
+// - If tStr='2025', then the full year is added to t, so it points to the last nanosecond of the 2025 year.
+// - If tStr='2025-05-20', then the full day is added to t, so it points to the last nanosecond of the 2025-05-20.
+func AdjustEndTimestamp(t int64, tStr string) int64 {
+	tStart := time.Unix(0, t).UTC()
 	tEnd := tStart
-	timeStr := stripTimezoneSuffix(stringRepr)
 
-	// Check if this is a Unix timestamp (all digits, possibly with + prefix)
-	isUnixTimestamp := isAllDigits(timeStr) || (len(timeStr) > 0 && timeStr[0] == '+' && isAllDigits(timeStr[1:]))
-	if isUnixTimestamp {
-		actualDigits := timeStr
-		if len(timeStr) > 0 && timeStr[0] == '+' {
-			actualDigits = timeStr[1:]
-		}
-		switch len(actualDigits) {
-		case 10: // seconds
+	tStr = stripTimezoneSuffix(tStr)
+
+	if len(tStr) == len("YYYY") {
+		// tStr contains only a year, such as "2025"
+		y, m, d := tStart.Date()
+		nsec := t % (24 * 3600 * 1e9)
+		tEnd = time.Date(y+1, m, d, 0, 0, int(nsec/1e9), int(nsec%1e9), time.UTC)
+		return tEnd.UnixNano() - 1
+	}
+
+	// Check if this is a Unix timestamp (all digits)
+	if isAllDigits(tStr) {
+		switch {
+		case len(tStr) <= 10:
 			tEnd = tStart.Add(time.Second)
-		case 13: // milliseconds
+		case len(tStr) <= 13:
 			tEnd = tStart.Add(time.Millisecond)
-		case 16: // microseconds
+		case len(tStr) <= 16:
 			tEnd = tStart.Add(time.Microsecond)
-		case 19: // nanoseconds
+		default:
 			tEnd = tStart.Add(time.Nanosecond)
+		}
+		return tEnd.UnixNano() - 1
+	}
+
+	if len(tStr) <= len("YYYY") || tStr[len("YYYY")] != '-' {
+		n := strings.IndexByte(tStr, '.')
+		if n < 0 || !isAllDigits(tStr[:n]) || !isAllDigits(tStr[n+1:]) {
+			// Unknown tStr format
+			return tEnd.UnixNano()
+		}
+		// Fractional seconds unix timestamp format.
+		switch len(tStr[n+1:]) {
+		case 3:
+			tEnd = tStart.Add(time.Millisecond)
+		case 6:
+			tEnd = tStart.Add(time.Microsecond)
 		default:
 			tEnd = tStart.Add(time.Nanosecond)
 		}
@@ -3017,29 +3040,25 @@ func getMatchingEndTime(startTime int64, stringRepr string) int64 {
 
 	// RFC3339 timestamp handling
 	switch {
-	case len(timeStr) == len("YYYY"):
+	case len(tStr) == len("YYYY-MM"):
 		y, m, d := tStart.Date()
-		nsec := startTime % (24 * 3600 * 1e9)
-		tEnd = time.Date(y+1, m, d, 0, 0, int(nsec/1e9), int(nsec%1e9), time.UTC)
-	case len(timeStr) == len("YYYY-MM") && timeStr[len("YYYY")] == '-':
-		y, m, d := tStart.Date()
-		nsec := startTime % (24 * 3600 * 1e9)
+		nsec := t % (24 * 3600 * 1e9)
 		if d != 1 {
 			d = 0
 			m++
 		}
 		tEnd = time.Date(y, m+1, d, 0, 0, int(nsec/1e9), int(nsec%1e9), time.UTC)
-	case len(timeStr) == len("YYYY-MM-DD") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DD"):
 		tEnd = tStart.Add(24 * time.Hour)
-	case len(timeStr) == len("YYYY-MM-DDThh") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DDThh"):
 		tEnd = tStart.Add(time.Hour)
-	case len(timeStr) == len("YYYY-MM-DDThh:mm") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DDThh:mm"):
 		tEnd = tStart.Add(time.Minute)
-	case len(timeStr) == len("YYYY-MM-DDThh:mm:ss") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DDThh:mm:ss"):
 		tEnd = tStart.Add(time.Second)
-	case len(timeStr) == len("YYYY-MM-DDThh:mm:ss.SSS") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DDThh:mm:ss.SSS"):
 		tEnd = tStart.Add(time.Millisecond)
-	case len(timeStr) == len("YYYY-MM-DDThh:mm:ss.SSSSSS") && timeStr[len("YYYY")] == '-':
+	case len(tStr) == len("YYYY-MM-DDThh:mm:ss.SSSSSS"):
 		tEnd = tStart.Add(time.Microsecond)
 	default:
 		tEnd = tStart.Add(time.Nanosecond)
