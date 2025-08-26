@@ -371,7 +371,7 @@ func TestStorageRunQuery(t *testing.T) {
 	t.Run("matching-stream-id-with-time-range", func(t *testing.T) {
 		minTimestamp := baseTimestamp + (rowsPerBlock-2)*1e9
 		maxTimestamp := baseTimestamp + (rowsPerBlock-1)*1e9 - 1
-		q := mustParseQuery(fmt.Sprintf(`_time:[%f,%f] _stream:{job="foobar",instance="host-1:234"}`, float64(minTimestamp)/1e9, float64(maxTimestamp)/1e9))
+		q := mustParseQuery(fmt.Sprintf(`_time:[%d,%d] _stream:{job="foobar",instance="host-1:234"}`, minTimestamp, maxTimestamp))
 		tenantID := TenantID{
 			AccountID: 1,
 			ProjectID: 11,
@@ -391,7 +391,7 @@ func TestStorageRunQuery(t *testing.T) {
 	t.Run("matching-stream-id-missing-time-range", func(t *testing.T) {
 		minTimestamp := baseTimestamp + (rowsPerBlock+1)*1e9
 		maxTimestamp := baseTimestamp + (rowsPerBlock+2)*1e9
-		q := mustParseQuery(fmt.Sprintf(`_stream:{job="foobar",instance="host-1:234"} _time:[%d, %d)`, minTimestamp/1e9, maxTimestamp/1e9))
+		q := mustParseQuery(fmt.Sprintf(`_stream:{job="foobar",instance="host-1:234"} _time:[%d, %d)`, minTimestamp, maxTimestamp))
 		tenantID := TenantID{
 			AccountID: 1,
 			ProjectID: 11,
@@ -405,7 +405,7 @@ func TestStorageRunQuery(t *testing.T) {
 	t.Run("missing-time-range", func(t *testing.T) {
 		minTimestamp := baseTimestamp + (rowsPerBlock+1)*1e9
 		maxTimestamp := baseTimestamp + (rowsPerBlock+2)*1e9
-		q := mustParseQuery(fmt.Sprintf(`_time:[%d, %d)`, minTimestamp/1e9, maxTimestamp/1e9))
+		q := mustParseQuery(fmt.Sprintf(`_time:[%d, %d)`, minTimestamp, maxTimestamp))
 		tenantID := TenantID{
 			AccountID: 1,
 			ProjectID: 11,
