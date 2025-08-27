@@ -2,7 +2,6 @@ import { FC, useMemo, useCallback, createPortal, memo } from "preact/compat";
 import DownloadLogsButton from "../../../DownloadLogsButton/DownloadLogsButton";
 import { ViewProps } from "../../types";
 import EmptyLogs from "../components/EmptyLogs/EmptyLogs";
-import JsonViewSettings from "./JsonViewSettings/JsonViewSettings";
 import { useSearchParams } from "react-router-dom";
 import orderby from "lodash.orderby";
 import "./style.scss";
@@ -13,18 +12,10 @@ import { JsonView as JsonViewComponent } from "../../../../../components/Views/J
 
 const MemoizedJsonView = memo(JsonViewComponent);
 
-const jsonQuerySortParam = "json_sort";
-
 const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
   const getLogs = useCallback(() => data, [data]);
 
   const [searchParams] = useSearchParams();
-  const sortParam = searchParams.get(jsonQuerySortParam);
-
-  const [sortField, sortDirection] = useMemo(() => {
-    const [sortField, sortDirection] = sortParam?.split(":").map(decodeURIComponent) || [];
-    return [sortField, sortDirection as "asc" | "desc" | undefined];
-  }, [sortParam]);
 
   const fields = useMemo(() => {
     const keys = new Set(data.flatMap(Object.keys));
@@ -41,12 +32,7 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
     });
   }, [fields, data]);
 
-  const sortedData = useMemo(() => {
-    if (!sortField || !sortDirection) return orderedFieldsData;
-    return orderby(orderedFieldsData, [sortField], [sortDirection]);
-  }, [orderedFieldsData, sortField, sortDirection]);
-
-  const getData = useCallback(() => JSON.stringify(sortedData, null, 2), [sortedData]);
+  const getData = useCallback(() => JSON.stringify(orderedFieldsData, null, 2), [orderedFieldsData]);
 
   const renderSettings = () => {
     if (!settingsRef.current) return null;
@@ -60,10 +46,6 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
             successfulCopiedMessage={"Copied JSON to clipboard"}
           />
           <DownloadLogsButton getLogs={getLogs} />
-          <JsonViewSettings
-            fields={fields}
-            sortQueryParamName={jsonQuerySortParam}
-          />
         </div>
       ),
       settingsRef.current
@@ -76,7 +58,7 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
     <div className={"vm-json-view"}>
       {renderSettings()}
       <MemoizedJsonView
-        data={sortedData}
+        data={orderedFieldsData}
       />
       <ScrollToTopButton />
     </div>
