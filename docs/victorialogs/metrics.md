@@ -1,12 +1,12 @@
 ---
 weight: 10
-title: Metrics Reference
+title: VictoriaLogs metrics
 menu:
   docs:
     parent: victorialogs
-    identifier: vl-metrics
+    identifier: victorialogs-metrics
     weight: 10
-    title: Metrics Reference
+    title: VictoriaLogs metrics
 tags:
   - logs
   - metrics
@@ -16,7 +16,8 @@ aliases:
 - /victorialogs/metrics/
 ---
 
-This document provides a comprehensive reference for all metrics exposed by VictoriaLogs at the `/metrics` endpoint. These metrics follow the Prometheus exposition format and can be used for monitoring, alerting, and performance analysis.
+This document provides a comprehensive reference for all metrics exposed by VictoriaLogs at the `http://localhost:9428/metrics` endpoint.
+These metrics follow the Prometheus exposition format and can be used for monitoring, alerting, and performance analysis.
 
 ## Table of Contents
 
