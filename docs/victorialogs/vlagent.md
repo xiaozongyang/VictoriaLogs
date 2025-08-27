@@ -13,56 +13,61 @@ aliases:
   - /vlagent/
 ---
 
-`vlagent` is a tiny agent which helps you collect logs from various sources
-and store them in [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/).
-See [Quick Start](#quick-start) for details.
-
-## Motivation
-
-While VictoriaLogs provides an efficient solution to store and observe logs, it lacks of replication out of box.
-Previous solution was to configure clients to replicate log streams into multiple VictoriaLogs installations.
-`vlagent` is a missing piece of log streams replication.
+`vlagent` is an agent for collecting logs from various sources and storing them them in multiple [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) instances.
 
 ## Features
 
-- It can accept logs from popular log collectors. See [these docs](https://docs.victoriametrics.com/victorialogs/data-ingestion/).
-- Can replicate collected logs simultaneously to multiple VictoriaLogs instances - see [these docs](#replication-and-high-availability).
-- Works smoothly in environments with unstable connections to remote storage. If the remote storage is unavailable, the collected logs
-  are buffered at `-remoteWrite.tmpDataPath`. The buffered logs are sent to remote storage as soon as the connection
-  to the remote storage is repaired. The maximum disk usage for the buffer can be limited with `-remoteWrite.maxDiskUsagePerURL`.
+- `vlagent` can accept logs from popular log collectors in the same way as VictoriaLogs does. See [these docs](https://docs.victoriametrics.com/victorialogs/data-ingestion/).
+  It accepts logs over HTTP-based protocols at the TCP port `9429` by default. The port can be changed via `-httpListenAddr` command-line flag.
+- `vlagent` can replicate collected logs among multiple VictoriaLogs instances - see [these docs](#replication-and-high-availability).
+- `vlagent` works smoothly in environments with unstable connections to VictoriaLogs instances. If the remote storage is unavailable, the collected logs
+  are buffered at the directory specified via `-remoteWrite.tmpDataPath` command-line flag. The buffered logs are sent to remote storage as soon as the connection
+  to the remote storage is repaired. The maximum disk usage for the buffer can be limited with `-remoteWrite.maxDiskUsagePerURL` command-line flag.
 
 ## Quick Start
 
 Please download and unpack `vlutils` archive from [releases page](https://github.com/VictoriaMetrics/VictoriaLogs/releases/latest) (
-`vlagent` is also available in docker images [Docker Hub](https://hub.docker.com/r/victoriametrics/vlagent/tags) and [Quay](https://quay.io/repository/victoriametrics/vlagent?tab=tags)),
-unpack it and pass the following flags to the `vlagent` binary in order to start sending the data to the VictoriaLogs remote storage:
+`vlagent` is also available in docker images [Docker Hub](https://hub.docker.com/r/victoriametrics/vlagent/tags)
+and [Quay](https://quay.io/repository/victoriametrics/vlagent?tab=tags)), then pass the following command-line flags to the `vlagent-prod` binary:
 
-- `-remoteWrite.url` with VictoriaLogs native protocol compatible remote storage endpoint, where to send the data to.
+- `-remoteWrite.url` - the VictoriaLogs endpoint for sending the accepted logs to. It must end with `/internal/insert`.
   The `-remoteWrite.url` may refer to [DNS SRV](https://en.wikipedia.org/wiki/SRV_record) address. See [these docs](#srv-urls) for details.
 
-Example command for writing the data received via [supported push-based protocols](#how-to-push-data-to-vlagent)
-to [single-node VictoriaLogs](https://docs.victoriametrics.com/victorialogs) located at `victoria-logs-host:9428`:
+Example command, which starts `vlagent` for accepting logs over HTTP-based [supported protocols](https://docs.victoriametrics.com/victorialogs/data-ingestion/)
+at the port `9429` and sends the collected logs to VictoriaLogs instance at `victoria-logs-host:9428`:
 
 ```sh
-/path/to/vlagent -remoteWrite.url=https://victoria-logs-host:9428/internal/insert
+/path/to/vlagent-prod -remoteWrite.url=http://victoria-logs-host:9428/internal/insert
 ```
 
 Pass `-help` to `vlagent` in order to see [the full list of supported command-line flags with their descriptions](#advanced-usage).
 
 ### Replication and high availability
 
-`vlagent` replicates the collected logs among multiple remote storage instances configured via `-remoteWrite.url` args.
-If a single remote storage instance temporarily is out of service, then the collected data remains available in another remote storage instance.
-`vlagent` buffers the collected data in files at `-remoteWrite.tmpDataPath` until the remote storage becomes available again,
-and then it sends the buffered data to the remote storage in order to prevent data gaps.
+`vlagent` can accept multiple `-remoteWrite.url` command-line flags. In this case it replicates the collected logs among
+all the VictoriaLogs instances mentioned in `-remoteWrite.url` command-line flags.
+
+If some of VictoriaLogs instances is temporarily unavailable, then the collected logs are buffered at the directory, which can be specified
+via `-remoteWrite.tmpDataPath` command-line flag. The buffered logs are sent to the VictoriaLogs instance as soon as it becomes available.
+This guarantees the delivery of all the logs across all the VictoriaLogs instances specified via `-remoteWrite.url` command-line flags.
+
+The on-disk buffer is limited by the available disk space at the `-remoteWrite.tmpDataPath` by default. It is possible to limit it
+to the given size via `-remoteWrite.maxDiskUsagePerURL` command-liine flag (this flag can be specified individually per each `-remoteWrite.url`).
+When the buffer size reaches this limit for the given `-remoteWrite.url`, then the oldest logs are dropped from the buffer and are replaced by the newly
+collected logs.
+
+`vlagent` maintains independent buffers per each `-remoteWrite.url`, so the collected logs are delivered to the remaining available VictoriaLogs instances
+in a timely manner when some of the VictoriaLogs instances are unavailable.
 
 ## Monitoring
 
 `vlagent` exports various metrics in Prometheus exposition format at `http://vmalent-host:9429/metrics` page.
-We recommend setting up regular scraping of this page either through `vmagent` or by Prometheus-compatible scraper,
+We recommend setting up regular scraping of this page either through [`vmagent`](https://docs.victoriametrics.com/victoriametrics/vmagent/) or by Prometheus-compatible scraper,
 so that the exported metrics may be analyzed later.
 
-Use official [Grafana dashboard](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/dashboards/vlagent.json) for `vlagent` state overview.
+See [the description of the most important metrics exposed by `vlagent`](https://docs.victoriametrics.com/victorialogs/vlagent-metrics/).
+
+Use [the official Grafana dashboard](https://github.com/VictoriaMetrics/VictoriaLogs/blob/master/dashboards/vlagent.json) for `vlagent` state overview.
 Graphs on this dashboard contain useful hints - hover the `i` icon at the top left corner of each graph in order to read it.
 If you have suggestions for improvements or have found a bug - please open an issue on github or add a review to the dashboard.
 
@@ -71,28 +76,24 @@ If you have suggestions for improvements or have found a bug - please open an is
 - It is recommended [setting up the official Grafana dashboard](#monitoring) in order to monitor the state of `vlagent`.
 
 - It is recommended increasing `-remoteWrite.queues` if `vlagent_remotewrite_pending_data_bytes` [metric](#monitoring)
-  grows constantly. It is also recommended increasing `-remoteWrite.maxBlockSize` command-line flags in this case.
-  This can improve data ingestion performance to the configured remote storage systems at the cost of higher memory usage.
+  grows constantly. This can improve data ingestion performance to the configured remote storage systems at the cost of higher memory usage.
 
 - If you see gaps in the data pushed by `vlagent` to remote storage when `-remoteWrite.maxDiskUsagePerURL` is set,
-  try increasing `-remoteWrite.queues`. Such gaps may appear because `vlagent` cannot keep up with sending the collected data to remote storage.
+  then try increasing `-remoteWrite.queues`. Such gaps may appear because `vlagent` cannot keep up with sending the collected data to remote storage.
   Therefore, it starts dropping the buffered data if the on-disk buffer size exceeds `-remoteWrite.maxDiskUsagePerURL`.
 
 - `vlagent` drops data blocks if remote storage replies with `400 Bad Request` and `404 Not Found` HTTP responses.
   The number of dropped blocks can be monitored via `vlagent_remotewrite_packets_dropped_total` metric exported at [/metrics page](#monitoring).
 
-- `vlagent` buffers scraped data at the `-remoteWrite.tmpDataPath` directory until it is sent to `-remoteWrite.url`.
-  The directory can grow large when remote storage is unavailable for extended periods of time and if the maximum directory size isn't limited
+- `vlagent` buffers the collected logs at the `-remoteWrite.tmpDataPath` directory until they are sent to the `-remoteWrite.url`.
+  The directory can grow large when the remote storage is unavailable for extended periods of time and if the maximum directory size isn't limited
   with `-remoteWrite.maxDiskUsagePerURL` command-line flag.
-  If you don't want to send all the buffered data from the directory to remote storage then simply stop `vlagent` and delete the directory.
+  If you don't want to send all the buffered data from the directory to remote storage then simply stop `vlagent` and
+  delete the contents of the directory pointed by `-remoteWrite.tmpDataPath`.
 
 - By default `vlagent` masks `-remoteWrite.url` with `secret-url` values in logs and at `/metrics` page because
   the url may contain sensitive information such as auth tokens or passwords.
   Pass `-remoteWrite.showURL` command-line flag when starting `vlagent` in order to see all the valid urls.
-
-See also:
-
-- [General Troubleshooting](https://docs.victoriametrics.com/victoriametrics/troubleshooting/)
 
 ## Profiling
 
@@ -208,7 +209,7 @@ See the docs at https://docs.victoriametrics.com/victorialogs/vlagent/ .
   -internStringMaxLen int
         The maximum length for strings to intern. A lower limit may save memory at the cost of higher CPU usage. See https://en.wikipedia.org/wiki/String_interning . See also -internStringDisableCache and -internStringCacheExpireDuration (default 500)
   -internalinsert.disable
-        Whether to disable /internal/insert HTTP endpoint
+        Whether to disable /internal/insert HTTP endpoint. See https://docs.victoriametrics.com/victorialogs/cluster/#security
   -internalinsert.maxRequestSize size
         The maximum size in bytes of a single request, which can be accepted at /internal/insert HTTP endpoint
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 67108864)
