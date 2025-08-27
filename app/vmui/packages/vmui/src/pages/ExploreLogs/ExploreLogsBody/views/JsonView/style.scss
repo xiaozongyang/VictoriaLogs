@@ -6,10 +6,4 @@
     flex-direction: row;
     align-items: center;
   }
-
-  @media (max-width: 1000px) {
-    .vm-document-virtualized-list__search {
-      top: 100px;
-    }
-  }
 }

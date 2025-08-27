@@ -1,5 +1,4 @@
 import { FC, useMemo } from "preact/compat";
-import { DocumentVirtualizedList } from "../../Main/DocumentVirtualizedList/DocumentVirtualizedList";
 
 interface Props {
   data: Record<string, string>[]
@@ -7,11 +6,9 @@ interface Props {
 
 export const JsonView: FC<Props> = ({ data }) => {
   const jsonStr = useMemo(() => {
-    return JSON.stringify(data, null, 2).split("\n");
+    return data.map((a) => JSON.stringify(a, null, 4)).join("\n")
   }, [data]);
   return (
-    <div className="vm-json-view">
-      <DocumentVirtualizedList data={jsonStr}/>
-    </div>
+    <pre style="line-height: 1.2em">{jsonStr}</pre>
   );
 };
