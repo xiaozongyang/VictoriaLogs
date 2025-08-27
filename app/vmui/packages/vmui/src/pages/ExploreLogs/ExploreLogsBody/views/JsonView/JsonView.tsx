@@ -7,7 +7,6 @@ import { useSearchParams } from "react-router-dom";
 import orderby from "lodash.orderby";
 import "./style.scss";
 import { Logs } from "../../../../../api/types";
-import { SortDirection } from "./types";
 import ScrollToTopButton from "../../../../../components/ScrollToTopButton/ScrollToTopButton";
 import { CopyButton } from "../../../../../components/CopyButton/CopyButton";
 import { JsonView as JsonViewComponent } from "../../../../../components/Views/JsonView/JsonView";
@@ -15,14 +14,12 @@ import { JsonView as JsonViewComponent } from "../../../../../components/Views/J
 const MemoizedJsonView = memo(JsonViewComponent);
 
 const jsonQuerySortParam = "json_sort";
-const fieldSortQueryParamName = "json_field_sort";
 
 const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
   const getLogs = useCallback(() => data, [data]);
 
   const [searchParams] = useSearchParams();
   const sortParam = searchParams.get(jsonQuerySortParam);
-  const fieldSortParam = searchParams.get(fieldSortQueryParamName) as SortDirection;
 
   const [sortField, sortDirection] = useMemo(() => {
     const [sortField, sortDirection] = sortParam?.split(":").map(decodeURIComponent) || [];
@@ -35,15 +32,14 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
   }, [data]);
 
   const orderedFieldsData = useMemo(() => {
-    if (!fieldSortParam) return data;
-    const orderedFields = fields.toSorted((a, b) => fieldSortParam === "asc" ? a.localeCompare(b): b.localeCompare(a));
+    const orderedFields = fields.toSorted((a, b) => a.localeCompare(b));
     return data.map((item) => {
       return orderedFields.reduce((acc, field) => {
         if (item[field]) acc[field] = item[field];
         return acc;
       }, {} as Logs);
     });
-  }, [fields, fieldSortParam, data]);
+  }, [fields, data]);
 
   const sortedData = useMemo(() => {
     if (!sortField || !sortDirection) return orderedFieldsData;
@@ -67,7 +63,6 @@ const JsonView: FC<ViewProps> = ({ data, settingsRef }) => {
           <JsonViewSettings
             fields={fields}
             sortQueryParamName={jsonQuerySortParam}
-            fieldSortQueryParamName={fieldSortQueryParamName}
           />
         </div>
       ),

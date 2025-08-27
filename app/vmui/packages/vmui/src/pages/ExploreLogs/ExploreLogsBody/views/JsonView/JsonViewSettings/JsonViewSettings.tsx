@@ -1,6 +1,6 @@
 import { FC, useMemo, useRef, useState, useEffect, useCallback } from "preact/compat";
 import Button from "../../../../../../components/Main/Button/Button";
-import { SettingsIcon, SortArrowDownIcon, SortArrowUpIcon, SortIcon } from "../../../../../../components/Main/Icons";
+import { SettingsIcon } from "../../../../../../components/Main/Icons";
 import Tooltip from "../../../../../../components/Main/Tooltip/Tooltip";
 import Select from "../../../../../../components/Main/Select/Select";
 import useBoolean from "../../../../../../hooks/useBoolean";
@@ -15,17 +15,14 @@ const directionList = ["asc", "desc"];
 interface JsonSettingsProps {
   fields: string[];
   sortQueryParamName: string;
-  fieldSortQueryParamName: string;
 }
 
 const JsonViewSettings: FC<JsonSettingsProps> = ({
   fields,
-  sortQueryParamName,
-  fieldSortQueryParamName
+  sortQueryParamName
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const buttonRef = useRef<HTMLDivElement>(null);
-  const [fieldSortDirection, setFieldSortDirection] = useState<SortDirection>(null);
 
   const {
     value: openSettings,
@@ -46,12 +43,7 @@ const JsonViewSettings: FC<JsonSettingsProps> = ({
         setSortDirection(direction);
       }
     }
-
-    const fieldSortParam = searchParams.get(fieldSortQueryParamName);
-    if (fieldSortParam === "asc" || fieldSortParam === "desc") {
-      setFieldSortDirection(fieldSortParam);
-    }
-  }, [searchParams, sortQueryParamName, fieldSortQueryParamName, setSortField, setSortDirection, setFieldSortDirection]);
+  }, [searchParams, sortQueryParamName, setSortField, setSortDirection]);
 
   const updateSortParams = useCallback((field: string | null, direction: SortDirection) => {
     const updatedParams = new URLSearchParams(searchParams.toString());
@@ -78,25 +70,6 @@ const JsonViewSettings: FC<JsonSettingsProps> = ({
     updateSortParams(null, null);
   };
 
-  const changeFieldSortDirection = useCallback(() => {
-    let newFieldSortDirection: SortDirection = null;
-    if (fieldSortDirection === null) {
-      newFieldSortDirection = "asc";
-    }else if (fieldSortDirection === "asc") {
-      newFieldSortDirection = "desc";
-    }
-    setFieldSortDirection(newFieldSortDirection);
-    const updatedParams = new URLSearchParams(searchParams.toString());
-
-    if (!newFieldSortDirection) {
-      updatedParams.delete(fieldSortQueryParamName);
-    } else {
-      updatedParams.set(fieldSortQueryParamName, encodeURIComponent(newFieldSortDirection));
-    }
-
-    setSearchParams(updatedParams);
-  },[fieldSortDirection, searchParams, fieldSortQueryParamName]);
-
   const handleChangeSortDirection = (direction: string) => {
     const field = sortField || fields[0];
     setSortField(field);
@@ -104,37 +77,8 @@ const JsonViewSettings: FC<JsonSettingsProps> = ({
     updateSortParams(field, direction as SortDirection);
   };
 
-  const fieldSortMeta = useMemo(() => ({
-    default: {
-      title: "Set field sort order. Click to sort in ascending order",
-      icon: <SortIcon />
-    },
-    asc: {
-      title: "Fields sorted ascending. Click to sort in descending order",
-      icon: <SortArrowDownIcon />
-    },
-    desc: {
-      title: "Fields sorted descending. Click to reset sort",
-      icon: <SortArrowUpIcon />
-    },
-  }), []);
-
-  const fieldSortButton = useMemo(() => {
-    const { title, icon } = fieldSortMeta[fieldSortDirection ?? "default"];
-    return <Tooltip title={title}>
-      <Button
-        variant="text"
-        startIcon={icon}
-        onClick={changeFieldSortDirection}
-        ariaLabel={title}
-      />
-    </Tooltip>;
-  }, [fieldSortDirection, toggleOpenSettings, changeFieldSortDirection, fieldSortMeta]);
-
-
   return (
     <div className="vm-json-settings">
-      {fieldSortButton}
       <Tooltip title={title}>
         <div ref={buttonRef}>
           <Button

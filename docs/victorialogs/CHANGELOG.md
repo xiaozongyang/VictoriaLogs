@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): always sort field names in alphabetical order at JSON view. This simplifies exploring logs with big number of fields (such as [wide events](https://jeremymorrell.dev/blog/a-practitioners-guide-to-wide-events/)). See [#87](https://github.com/VictoriaMetrics/VictoriaLogs/issues/87).
+
 * BUGFIX: [querying HTTP APIs](): properly return `VL-Request-Duration-Seconds` HTTP response header from [`/select/logsql/query`](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs) endpoint when it returns an empty result. Previously this header wasn't set for empty result. This is needed for [#602](https://github.com/VictoriaMetrics/VictoriaLogs/issues/602).
 
 ## [v1.30.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.30.0)
