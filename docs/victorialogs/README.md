@@ -562,7 +562,7 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
   -internStringMaxLen int
         The maximum length for strings to intern. A lower limit may save memory at the cost of higher CPU usage. See https://en.wikipedia.org/wiki/String_interning . See also -internStringDisableCache and -internStringCacheExpireDuration (default 500)
   -internalinsert.disable
-        Whether to disable /internal/insert HTTP endpoint
+        Whether to disable /internal/insert HTTP endpoint. See https://docs.victoriametrics.com/victorialogs/cluster/#security
   -internalinsert.maxRequestSize size
         The maximum size in bytes of a single request, which can be accepted at /internal/insert HTTP endpoint
         Supports the following optional suffixes for size values: KB, MB, GB, TB, KiB, MiB, GiB, TiB (default 67108864)

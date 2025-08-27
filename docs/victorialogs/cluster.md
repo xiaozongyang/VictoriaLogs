@@ -167,8 +167,7 @@ A single-node VictoriaLogs instance can be used as `vlstorage` node in VictoriaL
 - It accepts data ingestion requests from `vlinsert` via `/internal/insert` HTTP endpoint at the TCP port specified via `-httpListenAddr` command-line flag.
 - It accepts queries from `vlselect` via `/internal/select/*` HTTP endpoints at the TCP port specified via `-httpListenAddr` command-line flags.
 
-It is possible to disallow access to `/internal/insert` and `/internal/select/*` endpoints at single-node VictoriaLogs instance
-by running it with `-internalinsert.disable` and `-internalselect.disable` command-line flags.
+See also [security docs](#security).
 
 ## Multi-level cluster setup
 
@@ -187,6 +186,9 @@ All the VictoriaLogs cluster components must run in protected internal network w
 must be used in front of `vlinsert` and `vlselect` for authorizing access to these components from the Internet.
 See [Security and Load balancing docs](https://docs.victoriametrics.com/victorialogs/security-and-lb/).
 
+It is possible to disallow access to `/internal/insert` and `/internal/select/*` endpoints at single-node VictoriaLogs instance
+by running it with `-internalinsert.disable` and `-internalselect.disable` command-line flags. Note that [`vlagent`](https://docs.victoriametrics.com/victorialogs/vlagent/)
+sends the collected logs to the `/internal/insert` endpoint, so it should be available for data ingestion if you use `vlagent`.
 
 ### TLS
 
