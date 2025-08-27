@@ -1007,6 +1007,8 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// This call is needed for the case when the response didn't return any results.
+	writeResponseHeadersOnce()
 }
 
 type syncWriter struct {

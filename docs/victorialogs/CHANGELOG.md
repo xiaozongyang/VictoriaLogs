@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* BUGFIX: [querying HTTP APIs](): properly return `VL-Request-Duration-Seconds` HTTP response header from [`/select/logsql/query`](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs) endpoint when it returns an empty result. Previously this header wasn't set for empty result. This is needed for [#602](https://github.com/VictoriaMetrics/VictoriaLogs/issues/602).
+
 ## [v1.30.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.30.0)
 
 Released at 2025-08-27
