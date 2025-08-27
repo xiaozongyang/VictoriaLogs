@@ -30,6 +30,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): fix incorrect logs sorting on the Group tab. See [#579](https://github.com/VictoriaMetrics/VictoriaLogs/issues/579) for details.
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): add button to control offset of live tailing. See [#577](https://github.com/VictoriaMetrics/VictoriaLogs/issues/577) for details.
 * BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): optimize json tab. See [#51](https://github.com/VictoriaMetrics/VictoriaLogs/issues/51).
+* BUGFIX: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): escape value with double quotes when converting to a field filter.
 
 ## [v1.29.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.29.0)
 
