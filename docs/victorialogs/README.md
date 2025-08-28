@@ -219,6 +219,8 @@ VictoriaLogs supports dynamic attach and detach of per-day partitions, by using 
   so it is no longer visible for querying and cannot be used for data ingestion.
   The `/internal/partition/detach` endpoint waits until all the concurrently executed queries stop reading the data from the detached partition
   before returning. This allows safe manipulion of the detached partitions by external tools on disk after returning from the `/internal/partition/detach` endpoint.
+  Detached partitions are automatically attached after VictoriaLogs restart if the corresponding subdirectories at `<-storageDataPath>/partitions/` aren't removed.
+- `/internal/partition/list` - returns JSON-encoded list of currently active partitions, which can be passed as to `/internal/partition/detach` endpoint via `name` query arg.
 
 These endpoints can be protected from unauthorized access via `-partitionManageAuthKey` [command-line flag](#list-of-command-line-flags).
 

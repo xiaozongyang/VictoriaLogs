@@ -2,6 +2,7 @@ package vlstorage
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -228,6 +229,8 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) bool {
 		return processPartitionAttach(w, r)
 	case "/internal/partition/detach":
 		return processPartitionDetach(w, r)
+	case "/internal/partition/list":
+		return processPartitionList(w, r)
 	}
 	return false
 }
@@ -304,6 +307,28 @@ func processPartitionDetach(w http.ResponseWriter, r *http.Request) bool {
 		httpserver.Errorf(w, r, "%s", err)
 		return true
 	}
+
+	return true
+}
+
+func processPartitionList(w http.ResponseWriter, r *http.Request) bool {
+	if localStorage == nil {
+		// There are no partitions in non-local storage
+		return false
+	}
+
+	if !httpserver.CheckAuthFlag(w, r, partitionManageAuthKey) {
+		return true
+	}
+
+	ptNames := localStorage.PartitionList()
+	responseBody, err := json.Marshal(ptNames)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error when marshaling %d partition names: %s", len(ptNames), err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(responseBody)
 
 	return true
 }

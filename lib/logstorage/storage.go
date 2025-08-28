@@ -250,6 +250,20 @@ func (s *Storage) PartitionDetach(name string) error {
 	return nil
 }
 
+// PartitionList returns the list of the names for the currently attached partitions.
+//
+// Every partition name has YYYYMMDD format.
+func (s *Storage) PartitionList() []string {
+	s.partitionsLock.Lock()
+	ptNames := make([]string, len(s.partitions))
+	for i, ptw := range s.partitions {
+		ptNames[i] = ptw.pt.name
+	}
+	s.partitionsLock.Unlock()
+
+	return ptNames
+}
+
 type partitionWrapper struct {
 	// refCount is the number of active references to p.
 	// When it reaches zero, then the p is closed.
