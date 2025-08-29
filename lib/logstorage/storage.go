@@ -242,7 +242,7 @@ func (s *Storage) PartitionDetach(name string) error {
 	partitionPath := ptw.pt.path
 	ptw.decRef()
 
-	logger.Infof("waiting until all the concurrent readers stop reading from the partition %q", name)
+	logger.Infof("waiting until the partition %q isn't accessed", name)
 	<-ptw.doneCh
 
 	logger.Infof("successfully detached partition %q from %q", name, partitionPath)
@@ -265,11 +265,11 @@ func (s *Storage) PartitionList() []string {
 }
 
 type partitionWrapper struct {
-	// refCount is the number of active references to p.
-	// When it reaches zero, then the p is closed.
+	// refCount is the number of active references to partition.
+	// When it reaches zero, then the partition is closed.
 	refCount atomic.Int32
 
-	// The flag, which is set when the partition must be deleted after refCount reaches zero.
+	// mustDrop is set when the partition must be deleted after refCount reaches zero.
 	mustDrop atomic.Bool
 
 	// day is the day for the partition in the unix timestamp divided by the number of seconds in the day.
@@ -781,10 +781,9 @@ func (tf *TimeFormatter) String() string {
 //
 // The partition is automatically created if it didn't exist.
 //
-// nil is returned if the partition directory already exists, but it isn't registered in the list of active partitions.
-// This can happen in the following cases:
+// nil is returned in the following cases:
 //
-//   - When the partition goes outside the configured retention.
+//   - When the partition is outside the configured retention.
 //   - When the partition has been detached via Storage.PartitionDetach().
 //   - When the partition directory has been manually added, but wasn't attached yet via Storage.PartitionAttach().
 //
@@ -806,7 +805,7 @@ func (s *Storage) getPartitionForWriting(day int64) *partitionWrapper {
 		}
 	}
 	if ptw == nil {
-		// Missing partition for the given day. Create it.
+		// Missing partition for the given day.
 		if slices.Contains(s.deletedPartitions, day) {
 			// The partition has been already deleted.
 			return nil
@@ -820,8 +819,9 @@ func (s *Storage) getPartitionForWriting(day int64) *partitionWrapper {
 			// - When the partition has been detached via Storage.PartitionDetach().
 			return nil
 		}
-		mustCreatePartition(partitionPath)
 
+		// Create missing partition.
+		mustCreatePartition(partitionPath)
 		pt := mustOpenPartition(s, partitionPath)
 		ptw = newPartitionWrapper(pt, day)
 		if n == len(ptws) {
