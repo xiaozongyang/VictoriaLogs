@@ -218,11 +218,11 @@ VictoriaLogs supports the following HTTP API endpoints at `victoria-logs:9428` a
 - `/internal/partition/detach?name=YYYYMMDD` - detaches the partition directory with the given name `YYYYMMDD` from VictoriaLogs,
   so it is no longer visible for querying and cannot be used for data ingestion.
   The `/internal/partition/detach` endpoint waits until all the concurrently executed queries stop reading the data from the detached partition
-  before returning. This allows safe manipulion of the detached partitions by external tools on disk after returning from the `/internal/partition/detach` endpoint.
+  before returning. This allows safe on-disk manipulions of the detached partitions by external tools after returning from the `/internal/partition/detach` endpoint.
   Detached partitions are automatically attached after VictoriaLogs restart if the corresponding subdirectories at `<-storageDataPath>/partitions/` aren't removed.
-- `/internal/partition/list` - returns JSON-encoded list of currently active partitions, which can be passed as to `/internal/partition/detach` endpoint via `name` query arg.
+- `/internal/partition/list` - returns JSON-encoded list of currently active partitions, which can be passed to `/internal/partition/detach` endpoint via `name` query arg.
 - `/internal/partition/snapshot/create?name=YYYYMMDD` - creates a [snapshot](https://medium.com/@valyala/how-victoriametrics-makes-instant-snapshots-for-multi-terabyte-time-series-data-e1f3fb0e0282)
-  for the partition for the given day `YYYYMMDD`. The endpoint returns a JSON string with the full filesystem path to the created snapshot. It is safe to make backups from
+  for the partition for the given day `YYYYMMDD`. The endpoint returns a JSON string with the absolute filesystem path to the created snapshot. It is safe to make backups from
   the created snapshots according to [these instructions](#backup-and-restore). It is safe removing the created snapshots with `rm -rf` command.
   It is recommended removing unneeded snapshots on a regular basis in order to free up storage space occupied by these snapshots.
 - `/internal/partition/snapshot/list` - returns JSON-encoded list of absolute paths to per-day partition snapshots created via `/internal/partition/snapshot/create`.
@@ -239,7 +239,7 @@ This scheme can be implemented with the following simple cron job, which must ru
 1. To attach the copied partition to the VictoriaLogs with HDD via `/internal/partition/attach?name=YYYYMMDD` endpoint.
 1. To delete the copied partition directory from the VictoriaLogs with NVMe via `rm -rf <-storageDataPath>/partitions/YYYYMMDD` command.
 
-All the VictoriaLogs with NVMe and HDD disks can be queried simultaneously via `vlselect` component of [VictoriaLogs cluster](https://docs.victoriametrics.com/victorialogs/cluster/),
+All the VictoriaLogs instances with NVMe and HDD disks can be queried simultaneously via `vlselect` component of [VictoriaLogs cluster](https://docs.victoriametrics.com/victorialogs/cluster/),
 since [single-node VictoriaLogs instances can be a part of cluster](https://docs.victoriametrics.com/victorialogs/cluster/#single-node-and-cluster-mode-duality).
 
 ## Forced merge

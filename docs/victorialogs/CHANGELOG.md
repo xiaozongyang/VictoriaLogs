@@ -33,7 +33,7 @@ Released at 2025-08-31
 * FEATURE: add `/internal/partition/snapshot/list` HTTP endpoint, which returns the list of absolute paths to snapshots created via `/internal/partition/snapshot/create`. See [these docs](https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle) for details.
 * FEATURE: add `/internal/partition/list` HTTP endpoint, which returns the list of currently active partitions. See [partition lifecycle docs](https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle) for details.
 
-* BUGFIX: [querying HTTP APIs](): properly return `VL-Request-Duration-Seconds` HTTP response header from [`/select/logsql/query`](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs) endpoint when it returns an empty result. Previously this header wasn't set for empty result. This is needed for [#602](https://github.com/VictoriaMetrics/VictoriaLogs/issues/602).
+* BUGFIX: [querying HTTP APIs](https://docs.victoriametrics.com/victorialogs/querying/): properly return `VL-Request-Duration-Seconds` HTTP response header from [`/select/logsql/query`](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs) endpoint when it returns an empty result. Previously this header wasn't set for empty result. This is needed for [#602](https://github.com/VictoriaMetrics/VictoriaLogs/issues/602).
 
 ## [v1.30.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.30.0)
 
