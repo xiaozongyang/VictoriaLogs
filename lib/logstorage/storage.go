@@ -14,6 +14,7 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/cgroup"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/snapshot/snapshotutil"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil"
 )
 
@@ -286,6 +287,47 @@ func (s *Storage) PartitionSnapshotCreate(name string) (string, error) {
 	ptw.decRef()
 
 	return snapshotPath, nil
+}
+
+// PartitionSnapshotList returns a list of absolute paths to all the snapshots across active partitions.
+func (s *Storage) PartitionSnapshotList() []string {
+	s.partitionsLock.Lock()
+	ptws := append([]*partitionWrapper{}, s.partitions...)
+	for _, ptw := range ptws {
+		ptw.incRef()
+	}
+	s.partitionsLock.Unlock()
+
+	var snapshotPaths []string
+	for _, ptw := range ptws {
+		ptPath := ptw.pt.path
+		snapshotsPath := filepath.Join(ptPath, snapshotsDirname)
+		if !fs.IsPathExist(snapshotsPath) {
+			continue
+		}
+
+		des := fs.MustReadDir(snapshotsPath)
+		for _, de := range des {
+			name := de.Name()
+			if err := snapshotutil.Validate(name); err != nil {
+				logger.Warnf("unsupported snapshot name %q at %q: %s", name, snapshotsPath)
+				continue
+			}
+
+			path := filepath.Join(snapshotsPath, name)
+			snapshotPath, err := filepath.Abs(path)
+			if err != nil {
+				logger.Panicf("FATAL: cannot obtain absolute path for %q: %s", path, err)
+			}
+			snapshotPaths = append(snapshotPaths, snapshotPath)
+		}
+	}
+
+	for _, ptw := range ptws {
+		ptw.decRef()
+	}
+
+	return snapshotPaths
 }
 
 type partitionWrapper struct {

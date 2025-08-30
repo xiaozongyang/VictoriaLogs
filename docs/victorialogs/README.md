@@ -225,6 +225,7 @@ VictoriaLogs supports the following HTTP API endpoints at `victoria-logs:9428` a
   for the partition for the given day `YYYYMMDD`. The endpoint returns a JSON string with the full filesystem path to the created snapshot. It is safe to make backups from
   the created snapshots according to [these instructions](#backup-and-restore). It is safe removing the created snapshots with `rm -rf` command.
   It is recommended removing unneeded snapshots on a regular basis in order to free up storage space occupied by these snapshots.
+- `/internal/partition/snapshot/list` - returns JSON-encoded list of absolute paths to per-day partition snapshots created via `/internal/partition/snapshot/create`.
 
 These endpoints can be protected from unauthorized access via `-partitionManageAuthKey` [command-line flag](#list-of-command-line-flags).
 

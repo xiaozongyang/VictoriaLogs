@@ -233,6 +233,8 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) bool {
 		return processPartitionList(w, r)
 	case "/internal/partition/snapshot/create":
 		return processPartitionSnapshotCreate(w, r)
+	case "/internal/partition/snapshot/list":
+		return processPartitionSnapshotList(w, r)
 	}
 	return false
 }
@@ -324,6 +326,10 @@ func processPartitionList(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	ptNames := localStorage.PartitionList()
+	if ptNames == nil {
+		// This is needed in order to return `[]` instead of `null` to the client.
+		ptNames = []string{}
+	}
 
 	writeJSONResponse(w, ptNames)
 	return true
@@ -347,6 +353,26 @@ func processPartitionSnapshotCreate(w http.ResponseWriter, r *http.Request) bool
 	}
 
 	writeJSONResponse(w, snapshotPath)
+	return true
+}
+
+func processPartitionSnapshotList(w http.ResponseWriter, r *http.Request) bool {
+	if localStorage == nil {
+		// There are no partitions in non-local storage
+		return false
+	}
+
+	if !httpserver.CheckAuthFlag(w, r, partitionManageAuthKey) {
+		return true
+	}
+
+	snapshotPaths := localStorage.PartitionSnapshotList()
+	if snapshotPaths == nil {
+		// This is needed in order to return `[]` instead of `null` to the client.
+		snapshotPaths = []string{}
+	}
+
+	writeJSONResponse(w, snapshotPaths)
 	return true
 }
 
