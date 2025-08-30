@@ -67,26 +67,7 @@ func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, br *blockResult) {
 	psp.ssLock.Lock()
 	defer psp.ssLock.Unlock()
 
-	ss := &psp.ss
-
-	updateUint64Entry := func(dst *uint64, name string) {
-		c := br.getColumnByName(name)
-		v := c.getValueAtRow(br, 0)
-		n, ok := tryParseUint64(v)
-		if ok {
-			*dst += n
-		}
-	}
-
-	updateUint64Entry(&ss.bytesReadColumnsHeaders, "bytesReadColumnsHeaders")
-	updateUint64Entry(&ss.bytesReadColumnsHeaderIndexes, "bytesReadColumnsHeaderIndexes")
-	updateUint64Entry(&ss.bytesReadBloomFilters, "bytesReadBloomFilters")
-	updateUint64Entry(&ss.bytesReadValues, "bytesReadValues")
-	updateUint64Entry(&ss.bytesReadTimestamps, "bytesReadTimestamps")
-	updateUint64Entry(&ss.bytesReadBlockHeaders, "bytesReadBlockHeaders")
-	updateUint64Entry(&ss.blocksProcessed, "blocksProcessed")
-	updateUint64Entry(&ss.valuesRead, "valuesRead")
-	updateUint64Entry(&ss.timestampsRead, "timestampsRead")
+	pipeQueryStatsUpdate(&psp.ss, br)
 }
 
 func (psp *pipeQueryStatsLocalProcessor) flush() error {

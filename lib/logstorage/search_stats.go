@@ -4,6 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/VictoriaMetrics/metrics"
 )
 
@@ -103,4 +104,56 @@ func (ss *searchStats) updateAtomic(src *searchStats) {
 
 	atomic.AddUint64(&ss.valuesRead, src.valuesRead)
 	atomic.AddUint64(&ss.timestampsRead, src.timestampsRead)
+}
+
+func pipeQueryStatsWriteResult(ppNext pipeProcessor, ss *searchStats) {
+	rcs := make([]resultColumn, 10)
+
+	var buf []byte
+	addUint64Entry := func(rc *resultColumn, name string, value uint64) {
+		rc.name = name
+		bufLen := len(buf)
+		buf = marshalUint64String(buf, value)
+		v := bytesutil.ToUnsafeString(buf[bufLen:])
+		rc.addValue(v)
+	}
+
+	addUint64Entry(&rcs[0], "bytesReadColumnsHeaders", ss.bytesReadColumnsHeaders)
+	addUint64Entry(&rcs[1], "bytesReadColumnsHeaderIndexes", ss.bytesReadColumnsHeaderIndexes)
+	addUint64Entry(&rcs[2], "bytesReadBloomFilters", ss.bytesReadBloomFilters)
+	addUint64Entry(&rcs[3], "bytesReadValues", ss.bytesReadValues)
+	addUint64Entry(&rcs[4], "bytesReadTimestamps", ss.bytesReadTimestamps)
+	addUint64Entry(&rcs[5], "bytesReadBlockHeaders", ss.bytesReadBlockHeaders)
+
+	bytesReadTotal := ss.bytesReadColumnsHeaders + ss.bytesReadColumnsHeaderIndexes + ss.bytesReadBloomFilters + ss.bytesReadValues + ss.bytesReadTimestamps + ss.bytesReadBlockHeaders
+	addUint64Entry(&rcs[6], "bytesReadTotal", bytesReadTotal)
+
+	addUint64Entry(&rcs[7], "blocksProcessed", ss.blocksProcessed)
+	addUint64Entry(&rcs[8], "valuesRead", ss.valuesRead)
+	addUint64Entry(&rcs[9], "timestampsRead", ss.timestampsRead)
+
+	var br blockResult
+	br.setResultColumns(rcs, 1)
+	ppNext.writeBlock(0, &br)
+}
+
+func pipeQueryStatsUpdate(ss *searchStats, br *blockResult) {
+	updateUint64Entry := func(dst *uint64, name string) {
+		c := br.getColumnByName(name)
+		v := c.getValueAtRow(br, 0)
+		n, ok := tryParseUint64(v)
+		if ok {
+			*dst += n
+		}
+	}
+
+	updateUint64Entry(&ss.bytesReadColumnsHeaders, "bytesReadColumnsHeaders")
+	updateUint64Entry(&ss.bytesReadColumnsHeaderIndexes, "bytesReadColumnsHeaderIndexes")
+	updateUint64Entry(&ss.bytesReadBloomFilters, "bytesReadBloomFilters")
+	updateUint64Entry(&ss.bytesReadValues, "bytesReadValues")
+	updateUint64Entry(&ss.bytesReadTimestamps, "bytesReadTimestamps")
+	updateUint64Entry(&ss.bytesReadBlockHeaders, "bytesReadBlockHeaders")
+	updateUint64Entry(&ss.blocksProcessed, "blocksProcessed")
+	updateUint64Entry(&ss.valuesRead, "valuesRead")
+	updateUint64Entry(&ss.timestampsRead, "timestampsRead")
 }

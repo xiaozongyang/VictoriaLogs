@@ -3,8 +3,6 @@ package logstorage
 import (
 	"fmt"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
-
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
 )
 
@@ -70,37 +68,6 @@ func (psp *pipeQueryStatsProcessor) writeBlock(_ uint, _ *blockResult) {
 func (psp *pipeQueryStatsProcessor) flush() error {
 	pipeQueryStatsWriteResult(psp.ppNext, &psp.ss)
 	return nil
-}
-
-func pipeQueryStatsWriteResult(ppNext pipeProcessor, ss *searchStats) {
-	rcs := make([]resultColumn, 10)
-
-	var buf []byte
-	addUint64Entry := func(rc *resultColumn, name string, value uint64) {
-		rc.name = name
-		bufLen := len(buf)
-		buf = marshalUint64String(buf, value)
-		v := bytesutil.ToUnsafeString(buf[bufLen:])
-		rc.addValue(v)
-	}
-
-	addUint64Entry(&rcs[0], "bytesReadColumnsHeaders", ss.bytesReadColumnsHeaders)
-	addUint64Entry(&rcs[1], "bytesReadColumnsHeaderIndexes", ss.bytesReadColumnsHeaderIndexes)
-	addUint64Entry(&rcs[2], "bytesReadBloomFilters", ss.bytesReadBloomFilters)
-	addUint64Entry(&rcs[3], "bytesReadValues", ss.bytesReadValues)
-	addUint64Entry(&rcs[4], "bytesReadTimestamps", ss.bytesReadTimestamps)
-	addUint64Entry(&rcs[5], "bytesReadBlockHeaders", ss.bytesReadBlockHeaders)
-
-	bytesReadTotal := ss.bytesReadColumnsHeaders + ss.bytesReadColumnsHeaderIndexes + ss.bytesReadBloomFilters + ss.bytesReadValues + ss.bytesReadTimestamps + ss.bytesReadBlockHeaders
-	addUint64Entry(&rcs[6], "bytesReadTotal", bytesReadTotal)
-
-	addUint64Entry(&rcs[7], "blocksProcessed", ss.blocksProcessed)
-	addUint64Entry(&rcs[8], "valuesRead", ss.valuesRead)
-	addUint64Entry(&rcs[9], "timestampsRead", ss.timestampsRead)
-
-	var br blockResult
-	br.setResultColumns(rcs, 1)
-	ppNext.writeBlock(0, &br)
 }
 
 func parsePipeQueryStats(lex *lexer) (pipe, error) {
