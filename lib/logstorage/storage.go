@@ -182,7 +182,7 @@ func (s *Storage) PartitionAttach(name string) error {
 
 	// Verify whether the given partition already exists in the attached partitions list.
 	for _, ptw := range s.partitions {
-		if ptw.day == day {
+		if ptw.pt.name == name {
 			return fmt.Errorf("cannot attach the partition %q, because it is arleady attached", name)
 		}
 	}
@@ -211,17 +211,12 @@ func (s *Storage) PartitionAttach(name string) error {
 //
 // The detached partition can be attached again via PartitionAttach() call.
 func (s *Storage) PartitionDetach(name string) error {
-	day, err := getPartitionDayFromName(name)
-	if err != nil {
-		return err
-	}
-
 	ptw := func() *partitionWrapper {
 		s.partitionsLock.Lock()
 		defer s.partitionsLock.Unlock()
 
 		for i, ptw := range s.partitions {
-			if ptw.day != day {
+			if ptw.pt.name != name {
 				continue
 			}
 
@@ -262,6 +257,35 @@ func (s *Storage) PartitionList() []string {
 	s.partitionsLock.Unlock()
 
 	return ptNames
+}
+
+// PartitionSnapshotCreate creates a snapshot for the partition with the given name
+//
+// The snaphsot name must have YYYYMMDD format.
+//
+// The function returns an absolute path to the created snapshot on success.
+func (s *Storage) PartitionSnapshotCreate(name string) (string, error) {
+	ptw := func() *partitionWrapper {
+		s.partitionsLock.Lock()
+		defer s.partitionsLock.Unlock()
+
+		for _, ptw := range s.partitions {
+			if ptw.pt.name == name {
+				ptw.incRef()
+				return ptw
+			}
+		}
+		return nil
+	}()
+
+	if ptw == nil {
+		return "", fmt.Errorf("cannot create snapshot from partition %q, because it is missing", name)
+	}
+
+	snapshotPath := ptw.pt.mustCreateSnapshot()
+	ptw.decRef()
+
+	return snapshotPath, nil
 }
 
 type partitionWrapper struct {

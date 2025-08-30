@@ -231,6 +231,8 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) bool {
 		return processPartitionDetach(w, r)
 	case "/internal/partition/list":
 		return processPartitionList(w, r)
+	case "/internal/partition/snapshot/create":
+		return processPartitionSnapshotCreate(w, r)
 	}
 	return false
 }
@@ -322,15 +324,40 @@ func processPartitionList(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	ptNames := localStorage.PartitionList()
-	responseBody, err := json.Marshal(ptNames)
+
+	writeJSONResponse(w, ptNames)
+	return true
+}
+
+func processPartitionSnapshotCreate(w http.ResponseWriter, r *http.Request) bool {
+	if localStorage == nil {
+		// There are no partitions in non-local storage
+		return false
+	}
+
+	if !httpserver.CheckAuthFlag(w, r, partitionManageAuthKey) {
+		return true
+	}
+
+	name := r.FormValue("name")
+	snapshotPath, err := localStorage.PartitionSnapshotCreate(name)
 	if err != nil {
-		logger.Panicf("BUG: unexpected error when marshaling %d partition names: %s", len(ptNames), err)
+		httpserver.Errorf(w, r, "%s", err)
+		return true
+	}
+
+	writeJSONResponse(w, snapshotPath)
+	return true
+}
+
+func writeJSONResponse(w http.ResponseWriter, response any) {
+	responseBody, err := json.Marshal(response)
+	if err != nil {
+		logger.Panicf("BUG: unexpected error when marshaling response %T: %s", response, err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(responseBody)
-
-	return true
 }
 
 // Storage implements insertutil.LogRowsStorage interface

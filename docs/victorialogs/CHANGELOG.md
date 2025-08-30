@@ -19,6 +19,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 ## tip
 
 * FEATURE: [web UI](https://docs.victoriametrics.com/victorialogs/querying/#web-ui): always sort field names in alphabetical order at JSON view. This simplifies exploring logs with big number of fields (such as [wide events](https://jeremymorrell.dev/blog/a-practitioners-guide-to-wide-events/)). See [#87](https://github.com/VictoriaMetrics/VictoriaLogs/issues/87).
+* FEATURE: add `/internal/partition/snapshot/create` HTTP endpoint for creating [instant snapshots](https://medium.com/@valyala/how-victoriametrics-makes-instant-snapshots-for-multi-terabyte-time-series-data-e1f3fb0e0282) for per-day partitions. See [these docs](https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle) for details.
 * FEATURE: add `/internal/partition/list` HTTP endpoint, which returns the list of currently active partitions. See [partition lifecycle docs](https://docs.victoriametrics.com/victorialogs/#partitions-lifecycle) for details.
 
 * BUGFIX: [querying HTTP APIs](): properly return `VL-Request-Duration-Seconds` HTTP response header from [`/select/logsql/query`](https://docs.victoriametrics.com/victorialogs/querying/#querying-logs) endpoint when it returns an empty result. Previously this header wasn't set for empty result. This is needed for [#602](https://github.com/VictoriaMetrics/VictoriaLogs/issues/602).

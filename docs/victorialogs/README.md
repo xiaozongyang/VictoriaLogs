@@ -210,7 +210,7 @@ at April 18, 2025 UTC. This allows flexible data management.
 
 For example, old per-day data is automatically and quickly deleted according to the provided [retention policy](#retention) by removing the corresponding per-day subdirectory (partition).
 
-VictoriaLogs supports dynamic attach and detach of per-day partitions, by using the following HTTP API endpoints:
+VictoriaLogs supports the following HTTP API endpoints at `victoria-logs:9428` address for managing partitions:
 
 - `/internal/partition/attach?name=YYYYMMDD` - attaches the partition directory with the given name `YYYYMMDD` to VictoriaLogs,
   so it becomes visible for querying and can be used for data ingestion.
@@ -221,20 +221,22 @@ VictoriaLogs supports dynamic attach and detach of per-day partitions, by using 
   before returning. This allows safe manipulion of the detached partitions by external tools on disk after returning from the `/internal/partition/detach` endpoint.
   Detached partitions are automatically attached after VictoriaLogs restart if the corresponding subdirectories at `<-storageDataPath>/partitions/` aren't removed.
 - `/internal/partition/list` - returns JSON-encoded list of currently active partitions, which can be passed as to `/internal/partition/detach` endpoint via `name` query arg.
+- `/internal/partition/snapshot/create?name=YYYYMMDD` - creates a [snapshot](https://medium.com/@valyala/how-victoriametrics-makes-instant-snapshots-for-multi-terabyte-time-series-data-e1f3fb0e0282)
+  for the partition for the given day `YYYYMMDD`. The endpoint returns a JSON string with the full filesystem path to the created snapshot. It is safe to make backups from
+  the created snapshots according to [these instructions](#backup-and-restore). It is safe removing the created snapshots with `rm -rf` command.
+  It is recommended removing unneeded snapshots on a regular basis in order to free up storage space occupied by these snapshots.
 
 These endpoints can be protected from unauthorized access via `-partitionManageAuthKey` [command-line flag](#list-of-command-line-flags).
-
-These endpoints can be used for building a flexible per-partition backup / restore schemes as described [in these docs](#backup-and-restore).
 
 These endpoints can be used also for setting up automated multi-tier storage schemes where recently ingested logs are stored to VictoriaLogs instances
 with fast NVMe (SSD) disks, while historical logs are gradully migrated to VictoriaLogs instances with slower, but bigger and less expensive HDD disks.
 This scheme can be implemented with the following simple cron job, which must run once per day:
 
-1. To copy per-day partition for the older day stored at NVMe from NVMe to HDD, with the help of [`rsync`](https://en.wikipedia.org/wiki/Rsync).
-1. To detach the copied partition from the VictoriaLogs with NVMe.
-1. To run the `rsync` on the copied partition again in order sync the possible changes in the partition during the previous copy.
-1. To attach the copied partition to the VictoriaLogs with HDD.
-1. To delete the copied partition directory from the VictoriaLogs with NVMe.
+1. To make a snapshot for the older day stored at NVMe via `/internal/partition/snapshot/create?name=YYYYMMDD` endpoint.
+1. To copy the snapshot to the `<-storageDataPath>/partitions/YYYYMMDD` directory at VictoriaMetrics with HDD via [`rsync`](https://en.wikipedia.org/wiki/Rsync).
+1. To detach the copied partition from the VictoriaLogs with NVMe via `/internal/partition/detach?name=YYYYMMDD` endpoint.
+1. To attach the copied partition to the VictoriaLogs with HDD via `/internal/partition/attach?name=YYYYMMDD` endpoint.
+1. To delete the copied partition directory from the VictoriaLogs with NVMe via `rm -rf <-storageDataPath>/partitions/YYYYMMDD` command.
 
 All the VictoriaLogs with NVMe and HDD disks can be queried simultaneously via `vlselect` component of [VictoriaLogs cluster](https://docs.victoriametrics.com/victorialogs/cluster/),
 since [single-node VictoriaLogs instances can be a part of cluster](https://docs.victoriametrics.com/victorialogs/cluster/#single-node-and-cluster-mode-duality).
@@ -289,43 +291,41 @@ Here are the working example of HA configuration for VictoriaLogs using Docker C
 
 ## Backup and restore
 
-VictoriaLogs stores data into independent per-day partitions. Every partition is stored in a distinct directory under `<-storageDataPath>/partitions/` directory.
-See [these docs](#partitions-lifecycle) for details. It is safe to backup separate partitions with the [`rsync`](https://en.wikipedia.org/wiki/Rsync) command.
+VictoriaLogs stores data into independent per-day partitions. Every partition is stored in a separate directory - `<-storageDataPath>/partitions/YYYYMMDD`.
 
-The files in VictoriaLogs have the following properties:
+The following steps must be performed to make a backup of the given `YYYYMMDD` partition:
 
-- All the data files are immutable. Small metadata files can be modified.
-- Old data files are periodically merged into new data files.
+1. To create a snapshot for the given per-day partition via `/internal/partition/snapshot/create?name=YYYYMMDD` HTTP endpoint (see [partitions lifecycle](#partitions-lifecycle) docs).
+   This endpoint returns an absolute filesystem path to the created snapshot - `<path-to-snapshot>`.
 
-Therefore, for a complete **backup** of some per-day partition or a set of partitions, you need to run the `rsync` command **twice**.
+1. To backup the created snapshot with [`rsync`](https://en.wikipedia.org/wiki/Rsync):
 
-```sh
-# example of rsync to remote host
-rsync -avh --progress --delete <path-to-victorialogs-data> <username>@<host>:<path-to-victorialogs-backup>
-```
+   ```sh
+   rsync -avh --progress --delete <path-to-snapshot> <username>@<host>:<path-to-backup>/YYYYMMDD
+   ```
 
-The `--delete` option is required in the command above, since it ensures that the backup contains the full copy of the original data and doesn't contain superfluous files.
+   The `--delete` option is required in the command above in order to ensures that the backup contains the full copy of the original data without superfluous files.
 
-The first `rsync` will sync the majority of the data, which can be time-consuming.
-As VictoriaLogs continues to run, new data is ingested, potentially creating new data files and modifying metadata files.
+1. To remove the snapshot with `rm -rf <path-to-snapshot>` command. It is important to remove unneeded snapshots in order to free up storage space.
 
-The second `rsync` **requires a brief detaching of the backed up partitions** to ensure all data and metadata files are consistent and are no longer changing.
-See [how to detach and attach partitions without the need to stop VictoriaLogs](#partitions-lifecycle).
-This `rsync` will cover any changes that have occurred since the last `rsync` and should not take a significant amount of time.
 
-To **restore** from a backup, simply `rsync` the backup from a remote location to the original partition directories and then [attach them](#partitions-lifecycle)
-without the need to restart VictoriaLogs. Another option is to `rsync` the partitions from the backup while VictoriaLogs isn't running and then start VictoriaLogs.
-It will automatically discover and open all the partitions under the `<-storageDataPath>/partitions/` directory.
+The following steps must be performed for restoring the partition data from backup:
 
-```sh
-# example of rsync from remote backup to local
-rsync -avh --progress --delete <username>@<host>:<path-to-victorialogs-backup> <path-to-victorialogs-data>
-```
+1. To stop VictoriaLogs instance or to detach the `YYYYMMDD` partition, which is going to be restored from backup,
+   from the running VictoriaLogs via `/internal/partition/detach?name=YYYYMMDD` HTTP endpoint according to [these docs](#partitions-lifecycle).
 
-The `--delete` option is required in the command above, since it ensures that the destination folder contains the full copy of the backup and doesn't contain superfluous files.
+1. To copy the partition from backup with `rsync`:
 
-It is also possible to use **the disk snapshot** in order to perform a backup. This feature could be provided by your operating system,
-cloud provider, or third-party tools. Note that the snapshot must be **consistent** to ensure reliable backup.
+   ```sh
+   rsync -avh --progress --delete <username>@<host>:<path-to-backup>/YYYYMMDD <-storageDataPath>/partitions/
+   ```
+
+   The `--delete` option is required in the command above in order to ensure that the partition contains the full copy of the backup without superfluous files.
+
+1. To start VictoriaLogs instance or to attach the restored partition to the running VictoriaLogs instance via `/internal/partition/attach?name=YYYYMMDD` HTTP endpoint
+   according to [these docs](#partitions-lifecycle).
+
+It is also possible to use **the disk snapshot** feature provided by the operating system or cloud provider in order to perform a backup.
 
 ## Multitenancy
 

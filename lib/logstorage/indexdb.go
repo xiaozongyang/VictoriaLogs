@@ -121,6 +121,10 @@ func (idb *indexdb) debugFlush() {
 	idb.tb.DebugFlush()
 }
 
+func (idb *indexdb) mustCreateSnapshotAt(dstDir string) {
+	idb.tb.MustCreateSnapshotAt(dstDir)
+}
+
 func (idb *indexdb) updateStats(d *IndexdbStats) {
 	d.StreamsCreatedTotal += idb.streamsCreatedTotal.Load()
 

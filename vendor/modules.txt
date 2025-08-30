@@ -38,6 +38,7 @@ github.com/VictoriaMetrics/VictoriaMetrics/lib/pushmetrics
 github.com/VictoriaMetrics/VictoriaMetrics/lib/ratelimiter
 github.com/VictoriaMetrics/VictoriaMetrics/lib/regexutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/slicesutil
+github.com/VictoriaMetrics/VictoriaMetrics/lib/snapshot/snapshotutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/stringsutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/syncwg
 github.com/VictoriaMetrics/VictoriaMetrics/lib/timerpool
