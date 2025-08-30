@@ -100,6 +100,10 @@ func processQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 		bb := bufs.Get(workerID)
 
+		// Write the marker of a regular data block.
+		bb.B = append(bb.B, 0)
+
+		// Marshal the data block.
 		bb.B = db.Marshal(bb.B)
 
 		if len(bb.B) < 1024*1024 {
@@ -134,7 +138,13 @@ func processQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	return nil
+	// Send the query stats block.
+	bb := bufs.Get(0)
+	// Write the marker of query stats block.
+	bb.B = append(bb.B, 1)
+	// Marshal the block itself
+	bb.B = marshalQueryStatsBlock(bb.B, qctx)
+	return sendBuf(bb)
 }
 
 func processFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -151,7 +161,7 @@ func processFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		return fmt.Errorf("cannot obtain field names: %w", err)
 	}
 
-	return writeValuesWithHits(w, fieldNames, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, fieldNames, cp.DisableCompression)
 }
 
 func processFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -175,7 +185,7 @@ func processFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 		return fmt.Errorf("cannot obtain field values: %w", err)
 	}
 
-	return writeValuesWithHits(w, fieldValues, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, fieldValues, cp.DisableCompression)
 }
 
 func processStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -192,7 +202,7 @@ func processStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 		return fmt.Errorf("cannot obtain stream field names: %w", err)
 	}
 
-	return writeValuesWithHits(w, fieldNames, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, fieldNames, cp.DisableCompression)
 }
 
 func processStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -216,7 +226,7 @@ func processStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 		return fmt.Errorf("cannot obtain stream field values: %w", err)
 	}
 
-	return writeValuesWithHits(w, fieldValues, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, fieldValues, cp.DisableCompression)
 }
 
 func processStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -238,7 +248,7 @@ func processStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 		return fmt.Errorf("cannot obtain streams: %w", err)
 	}
 
-	return writeValuesWithHits(w, streams, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, streams, cp.DisableCompression)
 }
 
 func processStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
@@ -260,7 +270,7 @@ func processStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 		return fmt.Errorf("cannot obtain streams: %w", err)
 	}
 
-	return writeValuesWithHits(w, streamIDs, cp.DisableCompression)
+	return writeValuesWithHits(w, qctx, streamIDs, cp.DisableCompression)
 }
 
 type commonParams struct {
@@ -319,11 +329,17 @@ func getCommonParams(r *http.Request, expectedProtocolVersion string) (*commonPa
 	return cp, nil
 }
 
-func writeValuesWithHits(w http.ResponseWriter, vhs []logstorage.ValueWithHits, disableCompression bool) error {
+func writeValuesWithHits(w http.ResponseWriter, qctx *logstorage.QueryContext, vhs []logstorage.ValueWithHits, disableCompression bool) error {
 	var b []byte
+
+	// Marshal vhs at first
+	b = encoding.MarshalUint64(b, uint64(len(vhs)))
 	for i := range vhs {
 		b = vhs[i].Marshal(b)
 	}
+
+	// Marshal query stats block after that
+	b = marshalQueryStatsBlock(b, qctx)
 
 	if !disableCompression {
 		b = zstd.CompressLevel(nil, b, 1)
@@ -336,6 +352,13 @@ func writeValuesWithHits(w http.ResponseWriter, vhs []logstorage.ValueWithHits, 
 	}
 
 	return nil
+}
+
+func marshalQueryStatsBlock(dst []byte, qctx *logstorage.QueryContext) []byte {
+	queryDurationNsecs := qctx.QueryDurationNsecs()
+	db := qctx.QueryStats.CreateDataBlock(queryDurationNsecs)
+	dst = db.Marshal(dst)
+	return dst
 }
 
 func getInt64FromRequest(r *http.Request, argName string) (int64, error) {

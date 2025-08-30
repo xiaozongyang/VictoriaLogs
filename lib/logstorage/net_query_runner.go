@@ -2,7 +2,6 @@ package logstorage
 
 import (
 	"context"
-	"time"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
@@ -12,11 +11,8 @@ type RunNetQueryFunc func(qctx *QueryContext, writeBlock WriteDataBlockFunc) err
 
 // NetQueryRunner is a runner for distributed query.
 type NetQueryRunner struct {
-	// startTime is the starting time for the query execution.
-	startTime time.Time
-
-	// qs is used for collecting query stats.
-	qs *QueryStats
+	// qctx is the query context.
+	qctx *QueryContext
 
 	// qRemote is the query to execute at remote storage nodes.
 	qRemote *Query
@@ -31,7 +27,7 @@ type NetQueryRunner struct {
 // NewNetQueryRunner creates a new NetQueryRunner for the given qctx.
 //
 // runNetQuery is used for running distributed query.
-// q results are sent to writeNetBlock.
+// qctx results are sent to writeNetBlock.
 func NewNetQueryRunner(qctx *QueryContext, runNetQuery RunNetQueryFunc, writeNetBlock WriteDataBlockFunc) (*NetQueryRunner, error) {
 	runQuery := func(qctx *QueryContext, writeBlock writeBlockResultFunc) error {
 		writeNetBlock := writeBlock.newDataBlockWriter()
@@ -49,8 +45,7 @@ func NewNetQueryRunner(qctx *QueryContext, runNetQuery RunNetQueryFunc, writeNet
 	writeBlock := writeNetBlock.newBlockResultWriter()
 
 	nqr := &NetQueryRunner{
-		startTime:  qctx.startTime,
-		qs:         qctx.QueryStats,
+		qctx:       qctx,
 		qRemote:    qRemote,
 		pipesLocal: pipesLocal,
 		writeBlock: writeBlock,
@@ -69,7 +64,8 @@ func (nqr *NetQueryRunner) Run(ctx context.Context, concurrency int, netSearch f
 		return netSearch(stopCh, nqr.qRemote, writeNetBlock)
 	}
 
-	return runPipes(ctx, nqr.qs, nqr.pipesLocal, search, nqr.writeBlock, concurrency, nqr.startTime)
+	qctxLocal := nqr.qctx.WithContext(ctx)
+	return runPipes(qctxLocal, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
 }
 
 // splitQueryToRemoteAndLocal splits q into remotely executed query and into locally executed pipes.
@@ -93,18 +89,6 @@ func getRemoteAndLocalPipes(q *Query) ([]pipe, []pipe) {
 
 	var pipesRemote []pipe
 	var pipesLocal []pipe
-
-	for i, p := range q.pipes {
-		if _, ok := p.(*pipeQueryStats); ok {
-			// Special case for query_stats pipe: push all the pipes until query_stats to remote side.
-			pRemote, psLocal := p.splitToRemoteAndLocal(timestamp)
-			pipesRemote = append(pipesRemote[:0], q.pipes[:i]...)
-			pipesRemote = append(pipesRemote, pRemote)
-			pipesLocal = append(pipesLocal, psLocal...)
-			pipesLocal = append(pipesLocal, q.pipes[i+1:]...)
-			return pipesRemote, pipesLocal
-		}
-	}
 
 	for i, p := range q.pipes {
 		pRemote, psLocal := p.splitToRemoteAndLocal(timestamp)

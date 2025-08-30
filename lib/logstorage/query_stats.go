@@ -1,6 +1,7 @@
 package logstorage
 
 import (
+	"fmt"
 	"sync/atomic"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
@@ -47,7 +48,8 @@ func (qs *QueryStats) GetBytesReadTotal() uint64 {
 	return qs.BytesReadColumnsHeaders + qs.BytesReadColumnsHeaderIndexes + qs.BytesReadBloomFilters + qs.BytesReadValues + qs.BytesReadTimestamps + qs.BytesReadBlockHeaders
 }
 
-func (qs *QueryStats) updateAtomic(src *QueryStats) {
+// UpdateAtomic add src to qs in an atomic manner.
+func (qs *QueryStats) UpdateAtomic(src *QueryStats) {
 	atomic.AddUint64(&qs.BytesReadColumnsHeaders, src.BytesReadColumnsHeaders)
 	atomic.AddUint64(&qs.BytesReadColumnsHeaderIndexes, src.BytesReadColumnsHeaderIndexes)
 	atomic.AddUint64(&qs.BytesReadBloomFilters, src.BytesReadBloomFilters)
@@ -63,7 +65,64 @@ func (qs *QueryStats) updateAtomic(src *QueryStats) {
 	atomic.AddUint64(&qs.BytesProcessedUncompressedValues, src.BytesProcessedUncompressedValues)
 }
 
-func pipeQueryStatsWriteResult(ppNext pipeProcessor, qs *QueryStats, queryDurationNsecs int64) {
+// UpdateAtomicFromDataBlock adds query stats from db to qs.
+func (qs *QueryStats) UpdateFromDataBlock(db *DataBlock) error {
+	rowsCount := db.RowsCount()
+	if rowsCount != 1 {
+		return fmt.Errorf("unexpected number of rows in the query stats block; got %d; want 1", rowsCount)
+	}
+
+	var errGlobal error
+	getUint64Entry := func(name string) uint64 {
+		c := db.GetColumnByName(name)
+		if c == nil {
+			if errGlobal == nil {
+				errGlobal = fmt.Errorf("cannot find field %q in query stats received from the remote storage", name)
+			}
+			return 0
+		}
+		v := c.Values[0]
+		n, _ := tryParseUint64(v)
+		return n
+	}
+
+	qs.BytesReadColumnsHeaders += getUint64Entry("BytesReadColumnsHeaders")
+	qs.BytesReadColumnsHeaderIndexes += getUint64Entry("BytesReadColumnsHeaderIndexes")
+	qs.BytesReadBloomFilters += getUint64Entry("BytesReadBloomFilters")
+	qs.BytesReadValues += getUint64Entry("BytesReadValues")
+	qs.BytesReadTimestamps += getUint64Entry("BytesReadTimestamps")
+	qs.BytesReadBlockHeaders += getUint64Entry("BytesReadBlockHeaders")
+
+	qs.BlocksProcessed += getUint64Entry("BlocksProcessed")
+	qs.RowsProcessed += getUint64Entry("RowsProcessed")
+	qs.ValuesRead += getUint64Entry("ValuesRead")
+	qs.TimestampsRead += getUint64Entry("TimestampsRead")
+	qs.BytesProcessedUncompressedValues += getUint64Entry("BytesProcessedUncompressedValues")
+
+	return errGlobal
+}
+
+// CreateDataBlock creates a DataBlock from qs.
+func (qs *QueryStats) CreateDataBlock(queryDurationNsecs int64) *DataBlock {
+	var cs []BlockColumn
+
+	addUint64Entry := func(name string, value uint64) {
+		cs = append(cs, BlockColumn{
+			Name: name,
+			Values: []string{
+				string(marshalUint64String(nil, value)),
+			},
+		})
+	}
+
+	qs.addEntries(addUint64Entry, queryDurationNsecs)
+
+	return &DataBlock{
+		Columns: cs,
+	}
+}
+
+func (qs *QueryStats) writeToPipeProcessor(pp pipeProcessor, queryDurationNsecs int64) {
 	var rcs []resultColumn
 
 	var buf []byte
@@ -77,6 +136,14 @@ func pipeQueryStatsWriteResult(ppNext pipeProcessor, qs *QueryStats, queryDurati
 		rc.addValue(v)
 	}
 
+	qs.addEntries(addUint64Entry, queryDurationNsecs)
+
+	var br blockResult
+	br.setResultColumns(rcs, 1)
+	pp.writeBlock(0, &br)
+}
+
+func (qs *QueryStats) addEntries(addUint64Entry func(name string, value uint64), queryDurationNsecs int64) {
 	addUint64Entry("BytesReadColumnsHeaders", qs.BytesReadColumnsHeaders)
 	addUint64Entry("BytesReadColumnsHeaderIndexes", qs.BytesReadColumnsHeaderIndexes)
 	addUint64Entry("BytesReadBloomFilters", qs.BytesReadBloomFilters)
@@ -93,34 +160,4 @@ func pipeQueryStatsWriteResult(ppNext pipeProcessor, qs *QueryStats, queryDurati
 	addUint64Entry("BytesProcessedUncompressedValues", qs.BytesProcessedUncompressedValues)
 
 	addUint64Entry("QueryDurationNsecs", uint64(queryDurationNsecs))
-
-	var br blockResult
-	br.setResultColumns(rcs, 1)
-	ppNext.writeBlock(0, &br)
-}
-
-func pipeQueryStatsUpdateAtomic(dst *QueryStats, br *blockResult) {
-	getUint64Entry := func(name string) uint64 {
-		c := br.getColumnByName(name)
-		v := c.getValueAtRow(br, 0)
-		n, _ := tryParseUint64(v)
-		return n
-	}
-
-	var qs QueryStats
-
-	qs.BytesReadColumnsHeaders = getUint64Entry("BytesReadColumnsHeaders")
-	qs.BytesReadColumnsHeaderIndexes = getUint64Entry("BytesReadColumnsHeaderIndexes")
-	qs.BytesReadBloomFilters = getUint64Entry("BytesReadBloomFilters")
-	qs.BytesReadValues = getUint64Entry("BytesReadValues")
-	qs.BytesReadTimestamps = getUint64Entry("BytesReadTimestamps")
-	qs.BytesReadBlockHeaders = getUint64Entry("BytesReadBlockHeaders")
-
-	qs.BlocksProcessed = getUint64Entry("BlocksProcessed")
-	qs.RowsProcessed = getUint64Entry("RowsProcessed")
-	qs.ValuesRead = getUint64Entry("ValuesRead")
-	qs.TimestampsRead = getUint64Entry("TimestampsRead")
-	qs.BytesProcessedUncompressedValues = getUint64Entry("BytesProcessedUncompressedValues")
-
-	dst.updateAtomic(&qs)
 }

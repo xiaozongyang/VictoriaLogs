@@ -61,6 +61,11 @@ func (qctx *QueryContext) WithContextAndQuery(ctx context.Context, q *Query) *Qu
 	return newQueryContext(ctx, qctx.QueryStats, qctx.TenantIDs, q, qctx.startTime)
 }
 
+// QueryDurationNsecs returns the duration in nanoseconds since the NewQueryContext call.
+func (qctx *QueryContext) QueryDurationNsecs() int64 {
+	return time.Since(qctx.startTime).Nanoseconds()
+}
+
 func newQueryContext(ctx context.Context, qs *QueryStats, tenantIDs []TenantID, q *Query, startTime time.Time) *QueryContext {
 	return &QueryContext{
 		Context:    ctx,
@@ -194,13 +199,15 @@ func (s *Storage) runQuery(qctx *QueryContext, writeBlock writeBlockResultFunc) 
 		return nil
 	}
 
-	return runPipes(qctx.Context, qctx.QueryStats, q.pipes, search, writeBlock, workersCount, qctx.startTime)
+	return runPipes(qctx, q.pipes, search, writeBlock, workersCount)
 }
 
 // searchFunc must perform search and pass its results to writeBlock.
 type searchFunc func(stopCh <-chan struct{}, writeBlock writeBlockResultFunc) error
 
-func runPipes(ctx context.Context, qs *QueryStats, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int, startTime time.Time) error {
+func runPipes(qctx *QueryContext, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int) error {
+	ctx := qctx.Context
+
 	stopCh := ctx.Done()
 	if len(pipes) == 0 {
 		// Fast path when there are no pipes
@@ -229,9 +236,9 @@ func runPipes(ctx context.Context, qs *QueryStats, pipes []pipe, search searchFu
 	for i, pp := range pps {
 		switch t := pp.(type) {
 		case *pipeQueryStatsProcessor:
-			t.setQueryStats(qs, time.Since(startTime).Nanoseconds())
+			t.setQueryStats(qctx.QueryStats, qctx.QueryDurationNsecs())
 		case *pipeQueryStatsLocalProcessor:
-			t.setStartTime(time.Since(startTime).Nanoseconds())
+			t.setQueryStats(qctx.QueryStats, qctx.QueryDurationNsecs())
 		}
 
 		if err := pp.flush(); err != nil && errFlush == nil {
@@ -960,15 +967,25 @@ func (db *DataBlock) RowsCount() int {
 //
 // It returns false if db doesn't have _time column or this column has invalid timestamps.
 func (db *DataBlock) GetTimestamps(dst []int64) ([]int64, bool) {
+	c := db.GetColumnByName("_time")
+	if c == nil {
+		return dst, false
+	}
+	return tryParseTimestamps(dst, c.Values)
+}
+
+// GetColumnByName returns column with the given name from db.
+//
+// nil is returned if there is no such column.
+func (db *DataBlock) GetColumnByName(name string) *BlockColumn {
 	columns := db.Columns
 	for i := range columns {
 		c := &columns[i]
-		if c.Name != "_time" {
-			continue
+		if c.Name == name {
+			return c
 		}
-		return tryParseTimestamps(dst, c.Values)
 	}
-	return dst, false
+	return nil
 }
 
 // Marshal appends marshaled db to dst and returns the result.
@@ -1114,7 +1131,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 	wgWorkers.Add(workersCount)
 	for i := 0; i < workersCount; i++ {
 		go func(workerID uint) {
-			var qsLocal QueryStats
+			qsLocal := &QueryStats{}
 			bs := getBlockSearch()
 			bm := getBitmap(0)
 			for bswb := range workCh {
@@ -1127,7 +1144,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 						continue
 					}
 
-					bs.search(&qsLocal, bsw, bm)
+					bs.search(qsLocal, bsw, bm)
 					if bs.br.rowsLen > 0 {
 						if so.timeOffset != 0 {
 							bs.subTimeOffsetToTimestamps(so.timeOffset)
@@ -1144,7 +1161,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 			}
 			putBlockSearch(bs)
 			putBitmap(bm)
-			qs.updateAtomic(&qsLocal)
+			qs.UpdateAtomic(qsLocal)
 			wgWorkers.Done()
 		}(uint(i))
 	}
@@ -1181,11 +1198,11 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 		partitionSearchConcurrencyLimitCh <- struct{}{}
 		wgSearchers.Add(1)
 		go func(idx int, pt *partition) {
-			var qsLocal QueryStats
+			qsLocal := &QueryStats{}
 
-			psfs[idx] = pt.search(sf, f, so, &qsLocal, workCh, stopCh)
+			psfs[idx] = pt.search(sf, f, so, qsLocal, workCh, stopCh)
 
-			qs.updateAtomic(&qsLocal)
+			qs.UpdateAtomic(qsLocal)
 
 			wgSearchers.Done()
 			<-partitionSearchConcurrencyLimitCh

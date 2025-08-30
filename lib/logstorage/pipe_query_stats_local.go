@@ -53,24 +53,23 @@ func (ps *pipeQueryStatsLocal) newPipeProcessor(_ int, stopCh <-chan struct{}, _
 type pipeQueryStatsLocalProcessor struct {
 	ppNext pipeProcessor
 
-	qs QueryStats
+	// qs must be set before flush() cal via setQueryStats()
+	qs *QueryStats
 
-	// queryDurationNsecs must be initialized before flush() call via setStartTime().
+	// queryDurationNsecs must be set before flush() call via setQueryStats()
 	queryDurationNsecs int64
 }
 
-func (psp *pipeQueryStatsLocalProcessor) setStartTime(queryDurationNsecs int64) {
+func (psp *pipeQueryStatsLocalProcessor) setQueryStats(qs *QueryStats, queryDurationNsecs int64) {
+	psp.qs = qs
 	psp.queryDurationNsecs = queryDurationNsecs
 }
 
-func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, br *blockResult) {
-	if br.rowsLen <= 0 {
-		return
-	}
-	pipeQueryStatsUpdateAtomic(&psp.qs, br)
+func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, _ *blockResult) {
+	// Nothing to do - query stats is passed from the remote storage nodes via a side channel.
 }
 
 func (psp *pipeQueryStatsLocalProcessor) flush() error {
-	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs, psp.queryDurationNsecs)
+	psp.qs.writeToPipeProcessor(psp.ppNext, psp.queryDurationNsecs)
 	return nil
 }

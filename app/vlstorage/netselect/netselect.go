@@ -30,37 +30,37 @@ const (
 	// FieldNamesProtocolVersion is the version of the protocol used for /internal/select/field_names HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	FieldNamesProtocolVersion = "v1"
+	FieldNamesProtocolVersion = "v2"
 
 	// FieldValuesProtocolVersion is the version of the protocol used for /internal/select/field_values HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	FieldValuesProtocolVersion = "v1"
+	FieldValuesProtocolVersion = "v2"
 
 	// StreamFieldNamesProtocolVersion is the version of the protocol used for /internal/select/stream_field_names HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	StreamFieldNamesProtocolVersion = "v1"
+	StreamFieldNamesProtocolVersion = "v2"
 
 	// StreamFieldValuesProtocolVersion is the version of the protocol used for /internal/select/stream_field_values HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	StreamFieldValuesProtocolVersion = "v1"
+	StreamFieldValuesProtocolVersion = "v2"
 
 	// StreamsProtocolVersion is the version of the protocol used for /internal/select/streams HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	StreamsProtocolVersion = "v1"
+	StreamsProtocolVersion = "v2"
 
 	// StreamIDsProtocolVersion is the version of the protocol used for /internal/select/stream_ids HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	StreamIDsProtocolVersion = "v1"
+	StreamIDsProtocolVersion = "v2"
 
 	// QueryProtocolVersion is the version of the protocol used for /internal/select/query HTTP endpoint.
 	//
 	// It must be updated every time the protocol changes.
-	QueryProtocolVersion = "v1"
+	QueryProtocolVersion = "v2"
 )
 
 // Storage is a network storage for querying remote storage nodes in the cluster.
@@ -117,6 +117,9 @@ func newStorageNode(s *Storage, addr string, ac *promauth.Config, isTLS bool) *s
 func (sn *storageNode) runQuery(qctx *logstorage.QueryContext, processBlock func(db *logstorage.DataBlock)) error {
 	args := sn.getCommonArgs(QueryProtocolVersion, qctx)
 
+	qsLocal := &logstorage.QueryStats{}
+	defer qctx.QueryStats.UpdateAtomic(qsLocal)
+
 	path := "/internal/select/query"
 	responseBody, reqURL, err := sn.getResponseBodyForPathAndArgs(qctx.Context, path, args)
 	if err != nil {
@@ -159,6 +162,18 @@ func (sn *storageNode) runQuery(qctx *logstorage.QueryContext, processBlock func
 		}
 
 		for len(src) > 0 {
+			isQueryStatsBlock := (src[0] == 1)
+			src = src[1:]
+
+			if isQueryStatsBlock {
+				tail, err := unmarshalQueryStats(qsLocal, src)
+				if err != nil {
+					return fmt.Errorf("cannot unmarshal query stats received from %q: %w", reqURL, err)
+				}
+				src = tail
+				continue
+			}
+
 			tail, vb, err := db.UnmarshalInplace(src, valuesBuf[:0])
 			if err != nil {
 				return fmt.Errorf("cannot unmarshal data block received from %q: %w", reqURL, err)
@@ -176,7 +191,7 @@ func (sn *storageNode) runQuery(qctx *logstorage.QueryContext, processBlock func
 func (sn *storageNode) getFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
 	args := sn.getCommonArgs(FieldNamesProtocolVersion, qctx)
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/field_names", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/field_names", args)
 }
 
 func (sn *storageNode) getFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
@@ -184,13 +199,13 @@ func (sn *storageNode) getFieldValues(qctx *logstorage.QueryContext, fieldName s
 	args.Set("field", fieldName)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/field_values", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/field_values", args)
 }
 
 func (sn *storageNode) getStreamFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
 	args := sn.getCommonArgs(StreamFieldNamesProtocolVersion, qctx)
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_field_names", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/stream_field_names", args)
 }
 
 func (sn *storageNode) getStreamFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
@@ -198,21 +213,21 @@ func (sn *storageNode) getStreamFieldValues(qctx *logstorage.QueryContext, field
 	args.Set("field", fieldName)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_field_values", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/stream_field_values", args)
 }
 
 func (sn *storageNode) getStreams(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
 	args := sn.getCommonArgs(StreamsProtocolVersion, qctx)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/streams", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/streams", args)
 }
 
 func (sn *storageNode) getStreamIDs(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
 	args := sn.getCommonArgs(StreamIDsProtocolVersion, qctx)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_ids", args)
+	return sn.getValuesWithHits(qctx, "/internal/select/stream_ids", args)
 }
 
 func (sn *storageNode) getCommonArgs(version string, qctx *logstorage.QueryContext) url.Values {
@@ -225,12 +240,12 @@ func (sn *storageNode) getCommonArgs(version string, qctx *logstorage.QueryConte
 	return args
 }
 
-func (sn *storageNode) getValuesWithHits(ctx context.Context, path string, args url.Values) ([]logstorage.ValueWithHits, error) {
-	data, err := sn.getResponseForPathAndArgs(ctx, path, args)
+func (sn *storageNode) getValuesWithHits(qctx *logstorage.QueryContext, path string, args url.Values) ([]logstorage.ValueWithHits, error) {
+	data, err := sn.getResponseForPathAndArgs(qctx.Context, path, args)
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalValuesWithHits(data)
+	return unmarshalValuesWithHits(qctx, data)
 }
 
 func (sn *storageNode) getResponseForPathAndArgs(ctx context.Context, path string, args url.Values) ([]byte, error) {
@@ -327,19 +342,19 @@ func (s *Storage) RunQuery(qctx *logstorage.QueryContext, writeBlock logstorage.
 	}
 
 	search := func(stopCh <-chan struct{}, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
-		return s.runQuery(stopCh, qctx.TenantIDs, q, writeBlock)
+		qctxLocal := qctx.WithQuery(q)
+		return s.runQuery(stopCh, qctxLocal, writeBlock)
 	}
 
 	concurrency := qctx.Query.GetConcurrency()
 	return nqr.Run(qctx.Context, concurrency, search)
 }
 
-func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.TenantID, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
+func (s *Storage) runQuery(stopCh <-chan struct{}, qctx *logstorage.QueryContext, writeBlock logstorage.WriteDataBlockFunc) error {
 	ctxWithCancel, cancel := contextutil.NewStopChanContext(stopCh)
 	defer cancel()
 
-	qs := &logstorage.QueryStats{}
-	qctx := logstorage.NewQueryContext(ctxWithCancel, qs, tenantIDs, q)
+	qctxLocal := qctx.WithContext(ctxWithCancel)
 
 	errs := make([]error, len(s.sns))
 
@@ -350,7 +365,7 @@ func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.Tenant
 			defer wg.Done()
 
 			sn := s.sns[nodeIdx]
-			err := sn.runQuery(qctx, func(db *logstorage.DataBlock) {
+			err := sn.runQuery(qctxLocal, func(db *logstorage.DataBlock) {
 				writeBlock(uint(nodeIdx), db)
 			})
 			if err != nil {
@@ -372,7 +387,7 @@ func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.Tenant
 
 // GetFieldNames executes qctx and returns field names seen in results.
 func (s *Storage) GetFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getFieldNames(qctxLocal)
 	})
@@ -382,7 +397,7 @@ func (s *Storage) GetFieldNames(qctx *logstorage.QueryContext) ([]logstorage.Val
 //
 // If limit > 0, then up to limit unique values are returned.
 func (s *Storage) GetFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getFieldValues(qctxLocal, fieldName, limit)
 	})
@@ -390,7 +405,7 @@ func (s *Storage) GetFieldValues(qctx *logstorage.QueryContext, fieldName string
 
 // GetStreamFieldNames executes qctx and returns stream field names seen in results.
 func (s *Storage) GetStreamFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getStreamFieldNames(qctxLocal)
 	})
@@ -400,7 +415,7 @@ func (s *Storage) GetStreamFieldNames(qctx *logstorage.QueryContext) ([]logstora
 //
 // If limit > 0, then up to limit unique stream field values are returned.
 func (s *Storage) GetStreamFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getStreamFieldValues(qctxLocal, fieldName, limit)
 	})
@@ -410,7 +425,7 @@ func (s *Storage) GetStreamFieldValues(qctx *logstorage.QueryContext, fieldName 
 //
 // If limit > 0, then up to limit unique streams are returned.
 func (s *Storage) GetStreams(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getStreams(qctxLocal, limit)
 	})
@@ -420,16 +435,16 @@ func (s *Storage) GetStreams(qctx *logstorage.QueryContext, limit uint64) ([]log
 //
 // If limit > 0, then up to limit unique streamIDs are returned.
 func (s *Storage) GetStreamIDs(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
 		qctxLocal := qctx.WithContext(ctx)
 		return sn.getStreamIDs(qctxLocal, limit)
 	})
 }
 
-func (s *Storage) getValuesWithHits(ctx context.Context, limit uint64, resetHitsOnLimitExceeded bool,
+func (s *Storage) getValuesWithHits(qctx *logstorage.QueryContext, limit uint64, resetHitsOnLimitExceeded bool,
 	callback func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error)) ([]logstorage.ValueWithHits, error) {
 
-	ctxWithCancel, cancel := context.WithCancel(ctx)
+	ctxWithCancel, cancel := context.WithCancel(qctx.Context)
 	defer cancel()
 
 	results := make([][]logstorage.ValueWithHits, len(s.sns))
@@ -476,21 +491,51 @@ func getFirstNonCancelError(errs []error) error {
 	return nil
 }
 
-func unmarshalValuesWithHits(src []byte) ([]logstorage.ValueWithHits, error) {
-	var vhs []logstorage.ValueWithHits
-	for len(src) > 0 {
-		var vh logstorage.ValueWithHits
+func unmarshalValuesWithHits(qctx *logstorage.QueryContext, src []byte) ([]logstorage.ValueWithHits, error) {
+	// Unmarshal ValuesWithHits at first
+	if len(src) < 8 {
+		return nil, fmt.Errorf("missing length of ValueWithHits entries")
+	}
+	vhsLen := encoding.UnmarshalUint64(src[:8])
+	src = src[8:]
+
+	vhs := make([]logstorage.ValueWithHits, vhsLen)
+	for i := range vhs {
+		vh := &vhs[i]
+
 		tail, err := vh.UnmarshalInplace(src)
 		if err != nil {
-			return nil, fmt.Errorf("cannot unmarshal ValueWithHits #%d: %w", len(vhs), err)
+			return nil, fmt.Errorf("cannot unmarshal ValueWithHits #%d out of %d: %w", i, len(vhs), err)
 		}
 		src = tail
 
 		// Clone vh.Value, since it points to src.
 		vh.Value = strings.Clone(vh.Value)
+	}
 
-		vhs = append(vhs, vh)
+	// Unmarshal query stats
+	qsLocal := &logstorage.QueryStats{}
+	defer qctx.QueryStats.UpdateAtomic(qsLocal)
+
+	tail, err := unmarshalQueryStats(qsLocal, src)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal query stats: %w", err)
+	}
+	if len(tail) > 0 {
+		return nil, fmt.Errorf("unexpected tail left after query stats; len(tail)=%d", len(tail))
 	}
 
 	return vhs, nil
+}
+
+func unmarshalQueryStats(qs *logstorage.QueryStats, src []byte) ([]byte, error) {
+	var db logstorage.DataBlock
+	tail, _, err := db.UnmarshalInplace(src, nil)
+	if err != nil {
+		return tail, fmt.Errorf("cannot unmarshal data block: %w", err)
+	}
+	if err := qs.UpdateFromDataBlock(&db); err != nil {
+		return tail, fmt.Errorf("cannot read query stats: %w", err)
+	}
+	return tail, nil
 }
