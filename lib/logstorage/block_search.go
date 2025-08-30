@@ -471,7 +471,6 @@ func (bs *blockSearch) getValuesForColumn(ch *columnHeader) []string {
 	bloomValuesFile.values.MustReadAt(bb.B, int64(ch.valuesOffset))
 
 	bs.qs.bytesReadValues += ch.valuesSize
-	bs.qs.valuesRead += bs.bsw.bh.rowsCount
 
 	values = getStringBucket()
 	var err error
@@ -481,11 +480,22 @@ func (bs *blockSearch) getValuesForColumn(ch *columnHeader) []string {
 		logger.Panicf("FATAL: %s: cannot unmarshal column %q: %s", bs.partPath(), ch.name, err)
 	}
 
+	bs.qs.valuesRead += uint64(len(values.a))
+	bs.qs.bytesProcessedUncompressedValues += getStringsLen(values.a)
+
 	if bs.valuesCache == nil {
 		bs.valuesCache = make(map[string]*stringBucket)
 	}
 	bs.valuesCache[ch.name] = values
 	return values.a
+}
+
+func getStringsLen(a []string) uint64 {
+	var n uint64
+	for _, s := range a {
+		n += uint64(len(s))
+	}
+	return n
 }
 
 func (bs *blockSearch) subTimeOffsetToTimestamps(timeOffset int64) {

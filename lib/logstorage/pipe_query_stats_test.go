@@ -42,6 +42,7 @@ func TestPipeQueryStats(t *testing.T) {
 			{"bytesReadValues", "0"},
 			{"timestampsRead", "0"},
 			{"valuesRead", "0"},
+			{"bytesProcessedUncompressedValues", "0"},
 		},
 	})
 
@@ -70,6 +71,7 @@ func TestPipeQueryStats(t *testing.T) {
 			{"bytesReadValues", "0"},
 			{"timestampsRead", "0"},
 			{"valuesRead", "0"},
+			{"bytesProcessedUncompressedValues", "0"},
 		},
 	})
 
