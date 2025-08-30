@@ -95,6 +95,7 @@ type indexdb struct {
 
 func mustCreateIndexdb(path string) {
 	fs.MustMkdirFailIfExist(path)
+	fs.MustSyncPathAndParentDir(path)
 }
 
 func mustOpenIndexdb(path, partitionName string, s *Storage) *indexdb {

@@ -163,6 +163,7 @@ func (pw *partWrapper) decRef() {
 func mustCreateDatadb(path string) {
 	fs.MustMkdirFailIfExist(path)
 	mustWritePartNames(path, nil, nil)
+	fs.MustSyncPathAndParentDir(path)
 }
 
 // mustOpenDatadb opens datadb at the given path with the given flushInterval for in-memory data.

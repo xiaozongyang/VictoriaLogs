@@ -49,6 +49,8 @@ func mustCreatePartition(path string) {
 
 	datadbPath := filepath.Join(path, datadbDirname)
 	mustCreateDatadb(datadbPath)
+
+	fs.MustSyncPathAndParentDir(path)
 }
 
 // mustDeletePartition deletes partition at the given path.

@@ -337,6 +337,8 @@ func mustCreateStorage(path string) {
 
 	partitionsPath := filepath.Join(path, partitionsDirname)
 	fs.MustMkdirFailIfExist(partitionsPath)
+
+	fs.MustSyncPathAndParentDir(path)
 }
 
 // MustOpenStorage opens Storage at the given path.
@@ -392,6 +394,8 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 
 	partitionsPath := filepath.Join(path, partitionsDirname)
 	fs.MustMkdirIfNotExist(partitionsPath)
+	fs.MustSyncPath(path)
+
 	des := fs.MustReadDir(partitionsPath)
 	ptws := make([]*partitionWrapper, len(des))
 
