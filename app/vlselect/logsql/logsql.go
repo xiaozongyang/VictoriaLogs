@@ -93,9 +93,12 @@ func ProcessFacetsRequest(ctx context.Context, w http.ResponseWriter, r *http.Re
 		blockResultPool.Put(bb)
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Execute the query
 	startTime := time.Now()
-	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
@@ -204,9 +207,12 @@ func ProcessHitsRequest(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		blockResultPool.Put(bb)
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Execute the query
 	startTime := time.Now()
-	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
@@ -305,9 +311,12 @@ func ProcessFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain field names for the given query
 	startTime := time.Now()
-	fieldNames, err := vlstorage.GetFieldNames(ctx, ca.tenantIDs, ca.q)
+	fieldNames, err := vlstorage.GetFieldNames(qctx)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain field names: %s", err)
 		return
@@ -347,9 +356,12 @@ func ProcessFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain unique values for the given field
 	startTime := time.Now()
-	values, err := vlstorage.GetFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
+	values, err := vlstorage.GetFieldValues(qctx, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain values for field %q: %s", fieldName, err)
 		return
@@ -375,11 +387,15 @@ func ProcessStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain stream field names for the given query
 	startTime := time.Now()
-	names, err := vlstorage.GetStreamFieldNames(ctx, ca.tenantIDs, ca.q)
+	names, err := vlstorage.GetStreamFieldNames(qctx)
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field names: %s", err)
+		return
 	}
 
 	// Write response headers
@@ -416,11 +432,15 @@ func ProcessStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain stream field values for the given query and the given fieldName
 	startTime := time.Now()
-	values, err := vlstorage.GetStreamFieldValues(ctx, ca.tenantIDs, ca.q, fieldName, uint64(limit))
+	values, err := vlstorage.GetStreamFieldValues(qctx, fieldName, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream field values: %s", err)
+		return
 	}
 
 	// Write response headers
@@ -450,9 +470,12 @@ func ProcessStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain streamIDs for the given query
 	startTime := time.Now()
-	streamIDs, err := vlstorage.GetStreamIDs(ctx, ca.tenantIDs, ca.q, uint64(limit))
+	streamIDs, err := vlstorage.GetStreamIDs(qctx, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain stream_ids: %s", err)
 	}
@@ -484,9 +507,12 @@ func ProcessStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 		return
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Obtain streams for the given query
 	startTime := time.Now()
-	streams, err := vlstorage.GetStreams(ctx, ca.tenantIDs, ca.q, uint64(limit))
+	streams, err := vlstorage.GetStreams(qctx, uint64(limit))
 	if err != nil {
 		httpserver.Errorf(w, r, "cannot obtain streams: %s", err)
 	}
@@ -558,11 +584,15 @@ func ProcessLiveTailRequest(ctx context.Context, w http.ResponseWriter, r *http.
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	flusher.Flush()
 
+	qctx := ca.newQueryContext(ctxWithCancel)
+	defer ca.updatePerQueryStatsMetrics()
+
 	q := ca.q
 	qOrig := q
 	for {
 		q = qOrig.CloneWithTimeFilter(end, start, end)
-		if err := vlstorage.RunQuery(ctxWithCancel, ca.tenantIDs, q, tp.writeBlock); err != nil {
+		qctxLocal := qctx.WithQuery(q)
+		if err := vlstorage.RunQuery(qctxLocal, tp.writeBlock); err != nil {
 			httpserver.Errorf(w, r, "cannot execute tail query [%s]: %s", q, err)
 			return
 		}
@@ -797,9 +827,12 @@ func ProcessStatsQueryRangeRequest(ctx context.Context, w http.ResponseWriter, r
 		}
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Execute the request.
 	startTime := time.Now()
-	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
 		return
@@ -902,9 +935,12 @@ func ProcessStatsQueryRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		}
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Execute the query
 	startTime := time.Now()
-	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		err = fmt.Errorf("cannot execute query [%s]: %s", ca.q, err)
 		httpserver.SendPrometheusError(w, r, err)
 		return
@@ -1001,8 +1037,11 @@ func ProcessQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
+	qctx := ca.newQueryContext(ctx)
+	defer ca.updatePerQueryStatsMetrics()
+
 	// Execute the query
-	if err := vlstorage.RunQuery(ctx, ca.tenantIDs, ca.q, writeBlock); err != nil {
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		httpserver.Errorf(w, r, "cannot execute query [%s]: %s", ca.q, err)
 		return
 	}
@@ -1052,6 +1091,17 @@ type commonArgs struct {
 	// without taking into account extra_filters and (start, end) query args.
 	minTimestamp int64
 	maxTimestamp int64
+
+	// qs contains query execution statistics.
+	qs logstorage.QueryStats
+}
+
+func (ca *commonArgs) newQueryContext(ctx context.Context) *logstorage.QueryContext {
+	return logstorage.NewQueryContext(ctx, &ca.qs, ca.tenantIDs, ca.q)
+}
+
+func (ca *commonArgs) updatePerQueryStatsMetrics() {
+	vlstorage.UpdatePerQueryStatsMetrics(&ca.qs)
 }
 
 func (ca *commonArgs) getSelectedTimeRange() string {

@@ -197,7 +197,7 @@ func testFilterMatchForStorage(t *testing.T, s *Storage, tenantID TenantID, f fi
 	t.Helper()
 
 	so := newTestGenericSearchOptions([]TenantID{tenantID}, f, []string{neededColumnName, "_time"})
-	qs := &queryStats{}
+	qs := &QueryStats{}
 
 	type result struct {
 		value     string

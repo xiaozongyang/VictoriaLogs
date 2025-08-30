@@ -117,7 +117,10 @@ func processQueryRequest(ctx context.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	if err := vlstorage.RunQuery(ctx, cp.TenantIDs, cp.Query, writeBlock); err != nil {
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	if err := vlstorage.RunQuery(qctx, writeBlock); err != nil {
 		return err
 	}
 	if errGlobal != nil {
@@ -140,7 +143,10 @@ func processFieldNamesRequest(ctx context.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	fieldNames, err := vlstorage.GetFieldNames(ctx, cp.TenantIDs, cp.Query)
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	fieldNames, err := vlstorage.GetFieldNames(qctx)
 	if err != nil {
 		return fmt.Errorf("cannot obtain field names: %w", err)
 	}
@@ -161,7 +167,10 @@ func processFieldValuesRequest(ctx context.Context, w http.ResponseWriter, r *ht
 		return err
 	}
 
-	fieldValues, err := vlstorage.GetFieldValues(ctx, cp.TenantIDs, cp.Query, fieldName, uint64(limit))
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	fieldValues, err := vlstorage.GetFieldValues(qctx, fieldName, uint64(limit))
 	if err != nil {
 		return fmt.Errorf("cannot obtain field values: %w", err)
 	}
@@ -175,7 +184,10 @@ func processStreamFieldNamesRequest(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
-	fieldNames, err := vlstorage.GetStreamFieldNames(ctx, cp.TenantIDs, cp.Query)
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	fieldNames, err := vlstorage.GetStreamFieldNames(qctx)
 	if err != nil {
 		return fmt.Errorf("cannot obtain stream field names: %w", err)
 	}
@@ -196,7 +208,10 @@ func processStreamFieldValuesRequest(ctx context.Context, w http.ResponseWriter,
 		return err
 	}
 
-	fieldValues, err := vlstorage.GetStreamFieldValues(ctx, cp.TenantIDs, cp.Query, fieldName, uint64(limit))
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	fieldValues, err := vlstorage.GetStreamFieldValues(qctx, fieldName, uint64(limit))
 	if err != nil {
 		return fmt.Errorf("cannot obtain stream field values: %w", err)
 	}
@@ -215,7 +230,10 @@ func processStreamsRequest(ctx context.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	streams, err := vlstorage.GetStreams(ctx, cp.TenantIDs, cp.Query, uint64(limit))
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	streams, err := vlstorage.GetStreams(qctx, uint64(limit))
 	if err != nil {
 		return fmt.Errorf("cannot obtain streams: %w", err)
 	}
@@ -234,7 +252,10 @@ func processStreamIDsRequest(ctx context.Context, w http.ResponseWriter, r *http
 		return err
 	}
 
-	streamIDs, err := vlstorage.GetStreamIDs(ctx, cp.TenantIDs, cp.Query, uint64(limit))
+	qctx := cp.NewQueryContext(ctx)
+	defer cp.UpdatePerQueryStatsMetrics()
+
+	streamIDs, err := vlstorage.GetStreamIDs(qctx, uint64(limit))
 	if err != nil {
 		return fmt.Errorf("cannot obtain streams: %w", err)
 	}
@@ -247,6 +268,17 @@ type commonParams struct {
 	Query     *logstorage.Query
 
 	DisableCompression bool
+
+	// qs contains execution statistics for the Query.
+	qs logstorage.QueryStats
+}
+
+func (cp *commonParams) NewQueryContext(ctx context.Context) *logstorage.QueryContext {
+	return logstorage.NewQueryContext(ctx, &cp.qs, cp.TenantIDs, cp.Query)
+}
+
+func (cp *commonParams) UpdatePerQueryStatsMetrics() {
+	vlstorage.UpdatePerQueryStatsMetrics(&cp.qs)
 }
 
 func getCommonParams(r *http.Request, expectedProtocolVersion string) (*commonParams, error) {

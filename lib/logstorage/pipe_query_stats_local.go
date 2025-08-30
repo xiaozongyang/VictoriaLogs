@@ -53,7 +53,14 @@ func (ps *pipeQueryStatsLocal) newPipeProcessor(_ int, stopCh <-chan struct{}, _
 type pipeQueryStatsLocalProcessor struct {
 	ppNext pipeProcessor
 
-	qs queryStats
+	qs QueryStats
+
+	// queryDurationNsecs must be initialized before flush() call via setStartTime().
+	queryDurationNsecs int64
+}
+
+func (psp *pipeQueryStatsLocalProcessor) setStartTime(queryDurationNsecs int64) {
+	psp.queryDurationNsecs = queryDurationNsecs
 }
 
 func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, br *blockResult) {
@@ -64,6 +71,6 @@ func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, br *blockResult) {
 }
 
 func (psp *pipeQueryStatsLocalProcessor) flush() error {
-	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs)
+	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs, psp.queryDurationNsecs)
 	return nil
 }

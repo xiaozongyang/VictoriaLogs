@@ -114,11 +114,11 @@ func newStorageNode(s *Storage, addr string, ac *promauth.Config, isTLS bool) *s
 	return sn
 }
 
-func (sn *storageNode) runQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, processBlock func(db *logstorage.DataBlock)) error {
-	args := sn.getCommonArgs(QueryProtocolVersion, tenantIDs, q)
+func (sn *storageNode) runQuery(qctx *logstorage.QueryContext, processBlock func(db *logstorage.DataBlock)) error {
+	args := sn.getCommonArgs(QueryProtocolVersion, qctx)
 
 	path := "/internal/select/query"
-	responseBody, reqURL, err := sn.getResponseBodyForPathAndArgs(ctx, path, args)
+	responseBody, reqURL, err := sn.getResponseBodyForPathAndArgs(qctx.Context, path, args)
 	if err != nil {
 		return err
 	}
@@ -173,54 +173,54 @@ func (sn *storageNode) runQuery(ctx context.Context, tenantIDs []logstorage.Tena
 	}
 }
 
-func (sn *storageNode) getFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(FieldNamesProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(FieldNamesProtocolVersion, qctx)
 
-	return sn.getValuesWithHits(ctx, "/internal/select/field_names", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/field_names", args)
 }
 
-func (sn *storageNode) getFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(FieldValuesProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(FieldValuesProtocolVersion, qctx)
 	args.Set("field", fieldName)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(ctx, "/internal/select/field_values", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/field_values", args)
 }
 
-func (sn *storageNode) getStreamFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(StreamFieldNamesProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getStreamFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(StreamFieldNamesProtocolVersion, qctx)
 
-	return sn.getValuesWithHits(ctx, "/internal/select/stream_field_names", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_field_names", args)
 }
 
-func (sn *storageNode) getStreamFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(StreamFieldValuesProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getStreamFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(StreamFieldValuesProtocolVersion, qctx)
 	args.Set("field", fieldName)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(ctx, "/internal/select/stream_field_values", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_field_values", args)
 }
 
-func (sn *storageNode) getStreams(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(StreamsProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getStreams(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(StreamsProtocolVersion, qctx)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(ctx, "/internal/select/streams", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/streams", args)
 }
 
-func (sn *storageNode) getStreamIDs(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
-	args := sn.getCommonArgs(StreamIDsProtocolVersion, tenantIDs, q)
+func (sn *storageNode) getStreamIDs(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
+	args := sn.getCommonArgs(StreamIDsProtocolVersion, qctx)
 	args.Set("limit", fmt.Sprintf("%d", limit))
 
-	return sn.getValuesWithHits(ctx, "/internal/select/stream_ids", args)
+	return sn.getValuesWithHits(qctx.Context, "/internal/select/stream_ids", args)
 }
 
-func (sn *storageNode) getCommonArgs(version string, tenantIDs []logstorage.TenantID, q *logstorage.Query) url.Values {
+func (sn *storageNode) getCommonArgs(version string, qctx *logstorage.QueryContext) url.Values {
 	args := url.Values{}
 	args.Set("version", version)
-	args.Set("tenant_ids", string(logstorage.MarshalTenantIDs(nil, tenantIDs)))
-	args.Set("query", q.String())
-	args.Set("timestamp", fmt.Sprintf("%d", q.GetTimestamp()))
+	args.Set("tenant_ids", string(logstorage.MarshalTenantIDs(nil, qctx.TenantIDs)))
+	args.Set("query", qctx.Query.String())
+	args.Set("timestamp", fmt.Sprintf("%d", qctx.Query.GetTimestamp()))
 	args.Set("disable_compression", fmt.Sprintf("%v", sn.s.disableCompression))
 	return args
 }
@@ -319,24 +319,27 @@ func (s *Storage) MustStop() {
 	s.sns = nil
 }
 
-// RunQuery runs the given q and calls writeBlock for the returned data blocks
-func (s *Storage) RunQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
-	nqr, err := logstorage.NewNetQueryRunner(ctx, tenantIDs, q, s.RunQuery, writeBlock)
+// RunQuery runs the given qctx and calls writeBlock for the returned data blocks
+func (s *Storage) RunQuery(qctx *logstorage.QueryContext, writeBlock logstorage.WriteDataBlockFunc) error {
+	nqr, err := logstorage.NewNetQueryRunner(qctx, s.RunQuery, writeBlock)
 	if err != nil {
 		return err
 	}
 
 	search := func(stopCh <-chan struct{}, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
-		return s.runQuery(stopCh, tenantIDs, q, writeBlock)
+		return s.runQuery(stopCh, qctx.TenantIDs, q, writeBlock)
 	}
 
-	concurrency := q.GetConcurrency()
-	return nqr.Run(ctx, concurrency, search)
+	concurrency := qctx.Query.GetConcurrency()
+	return nqr.Run(qctx.Context, concurrency, search)
 }
 
 func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.TenantID, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
 	ctxWithCancel, cancel := contextutil.NewStopChanContext(stopCh)
 	defer cancel()
+
+	qs := &logstorage.QueryStats{}
+	qctx := logstorage.NewQueryContext(ctxWithCancel, qs, tenantIDs, q)
 
 	errs := make([]error, len(s.sns))
 
@@ -347,7 +350,7 @@ func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.Tenant
 			defer wg.Done()
 
 			sn := s.sns[nodeIdx]
-			err := sn.runQuery(ctxWithCancel, tenantIDs, q, func(db *logstorage.DataBlock) {
+			err := sn.runQuery(qctx, func(db *logstorage.DataBlock) {
 				writeBlock(uint(nodeIdx), db)
 			})
 			if err != nil {
@@ -367,53 +370,59 @@ func (s *Storage) runQuery(stopCh <-chan struct{}, tenantIDs []logstorage.Tenant
 	return getFirstNonCancelError(errs)
 }
 
-// GetFieldNames executes q and returns field names seen in results.
-func (s *Storage) GetFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getFieldNames(ctx, tenantIDs, q)
+// GetFieldNames executes qctx and returns field names seen in results.
+func (s *Storage) GetFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getFieldNames(qctxLocal)
 	})
 }
 
-// GetFieldValues executes q and returns unique values for the fieldName seen in results.
+// GetFieldValues executes qctx and returns unique values for the fieldName seen in results.
 //
 // If limit > 0, then up to limit unique values are returned.
-func (s *Storage) GetFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getFieldValues(ctx, tenantIDs, q, fieldName, limit)
+func (s *Storage) GetFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getFieldValues(qctxLocal, fieldName, limit)
 	})
 }
 
-// GetStreamFieldNames executes q and returns stream field names seen in results.
-func (s *Storage) GetStreamFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getStreamFieldNames(ctx, tenantIDs, q)
+// GetStreamFieldNames executes qctx and returns stream field names seen in results.
+func (s *Storage) GetStreamFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, 0, false, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getStreamFieldNames(qctxLocal)
 	})
 }
 
-// GetStreamFieldValues executes q and returns stream field values for the given fieldName seen in results.
+// GetStreamFieldValues executes qctx and returns stream field values for the given fieldName seen in results.
 //
 // If limit > 0, then up to limit unique stream field values are returned.
-func (s *Storage) GetStreamFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getStreamFieldValues(ctx, tenantIDs, q, fieldName, limit)
+func (s *Storage) GetStreamFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getStreamFieldValues(qctxLocal, fieldName, limit)
 	})
 }
 
-// GetStreams executes q and returns streams seen in query results.
+// GetStreams executes qctx and returns streams seen in query results.
 //
 // If limit > 0, then up to limit unique streams are returned.
-func (s *Storage) GetStreams(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getStreams(ctx, tenantIDs, q, limit)
+func (s *Storage) GetStreams(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getStreams(qctxLocal, limit)
 	})
 }
 
-// GetStreamIDs executes q and returns streamIDs seen in query results.
+// GetStreamIDs executes qctx and returns streamIDs seen in query results.
 //
 // If limit > 0, then up to limit unique streamIDs are returned.
-func (s *Storage) GetStreamIDs(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
-	return s.getValuesWithHits(ctx, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
-		return sn.getStreamIDs(ctx, tenantIDs, q, limit)
+func (s *Storage) GetStreamIDs(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
+	return s.getValuesWithHits(qctx.Context, limit, true, func(ctx context.Context, sn *storageNode) ([]logstorage.ValueWithHits, error) {
+		qctxLocal := qctx.WithContext(ctx)
+		return sn.getStreamIDs(qctxLocal, limit)
 	})
 }
 

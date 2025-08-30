@@ -61,8 +61,11 @@ type pipeQueryStatsProcessor struct {
 
 	shards atomicutil.Slice[pipeQueryStatsProcessorShard]
 
-	// qs must be initialized via setQueryStats() before flush() call.
-	qs queryStats
+	// qs must be set via setQueryStats() before flush() call.
+	qs *QueryStats
+
+	// queryDurationNsecs must be set via setQueryStats() before flush() call.
+	queryDurationNsecs int64
 }
 
 type pipeQueryStatsProcessorShard struct {
@@ -70,8 +73,9 @@ type pipeQueryStatsProcessorShard struct {
 	sink int
 }
 
-func (psp *pipeQueryStatsProcessor) setQueryStats(qs *queryStats) {
-	psp.qs = *qs
+func (psp *pipeQueryStatsProcessor) setQueryStats(qs *QueryStats, queryDurationNsecs int64) {
+	psp.qs = qs
+	psp.queryDurationNsecs = queryDurationNsecs
 }
 
 func (psp *pipeQueryStatsProcessor) writeBlock(workerID uint, br *blockResult) {
@@ -87,7 +91,7 @@ func (psp *pipeQueryStatsProcessor) writeBlock(workerID uint, br *blockResult) {
 }
 
 func (psp *pipeQueryStatsProcessor) flush() error {
-	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs)
+	pipeQueryStatsWriteResult(psp.ppNext, psp.qs, psp.queryDurationNsecs)
 	return nil
 }
 

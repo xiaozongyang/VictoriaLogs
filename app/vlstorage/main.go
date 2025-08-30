@@ -1,7 +1,6 @@
 package vlstorage
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -419,73 +418,74 @@ func (*Storage) MustAddRows(lr *logstorage.LogRows) {
 	}
 }
 
-// RunQuery runs the given q and calls writeBlock for the returned data blocks
-func RunQuery(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, writeBlock logstorage.WriteDataBlockFunc) error {
-	qOpt, offset, limit := q.GetLastNResultsQuery()
+// RunQuery runs the given qctx and calls writeBlock for the returned data blocks
+func RunQuery(qctx *logstorage.QueryContext, writeBlock logstorage.WriteDataBlockFunc) error {
+	qOpt, offset, limit := qctx.Query.GetLastNResultsQuery()
 	if qOpt != nil {
-		return runOptimizedLastNResultsQuery(ctx, tenantIDs, qOpt, offset, limit, writeBlock)
+		qctxOpt := qctx.WithQuery(qOpt)
+		return runOptimizedLastNResultsQuery(qctxOpt, offset, limit, writeBlock)
 	}
 
 	if localStorage != nil {
-		return localStorage.RunQuery(ctx, tenantIDs, q, writeBlock)
+		return localStorage.RunQuery(qctx, writeBlock)
 	}
-	return netstorageSelect.RunQuery(ctx, tenantIDs, q, writeBlock)
+	return netstorageSelect.RunQuery(qctx, writeBlock)
 }
 
-// GetFieldNames executes q and returns field names seen in results.
-func GetFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
+// GetFieldNames executes qctx and returns field names seen in results.
+func GetFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetFieldNames(ctx, tenantIDs, q)
+		return localStorage.GetFieldNames(qctx)
 	}
-	return netstorageSelect.GetFieldNames(ctx, tenantIDs, q)
+	return netstorageSelect.GetFieldNames(qctx)
 }
 
-// GetFieldValues executes q and returns unique values for the fieldName seen in results.
+// GetFieldValues executes the given qctx and returns unique values for the fieldName seen in results.
 //
 // If limit > 0, then up to limit unique values are returned.
-func GetFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+func GetFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetFieldValues(ctx, tenantIDs, q, fieldName, limit)
+		return localStorage.GetFieldValues(qctx, fieldName, limit)
 	}
-	return netstorageSelect.GetFieldValues(ctx, tenantIDs, q, fieldName, limit)
+	return netstorageSelect.GetFieldValues(qctx, fieldName, limit)
 }
 
-// GetStreamFieldNames executes q and returns stream field names seen in results.
-func GetStreamFieldNames(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query) ([]logstorage.ValueWithHits, error) {
+// GetStreamFieldNames executes the given qctx and returns stream field names seen in results.
+func GetStreamFieldNames(qctx *logstorage.QueryContext) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetStreamFieldNames(ctx, tenantIDs, q)
+		return localStorage.GetStreamFieldNames(qctx)
 	}
-	return netstorageSelect.GetStreamFieldNames(ctx, tenantIDs, q)
+	return netstorageSelect.GetStreamFieldNames(qctx)
 }
 
-// GetStreamFieldValues executes q and returns stream field values for the given fieldName seen in results.
+// GetStreamFieldValues executes the given qctx and returns stream field values for the given fieldName seen in results.
 //
 // If limit > 0, then up to limit unique stream field values are returned.
-func GetStreamFieldValues(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
+func GetStreamFieldValues(qctx *logstorage.QueryContext, fieldName string, limit uint64) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetStreamFieldValues(ctx, tenantIDs, q, fieldName, limit)
+		return localStorage.GetStreamFieldValues(qctx, fieldName, limit)
 	}
-	return netstorageSelect.GetStreamFieldValues(ctx, tenantIDs, q, fieldName, limit)
+	return netstorageSelect.GetStreamFieldValues(qctx, fieldName, limit)
 }
 
-// GetStreams executes q and returns streams seen in query results.
+// GetStreams executes the given qctx and returns streams seen in query results.
 //
 // If limit > 0, then up to limit unique streams are returned.
-func GetStreams(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
+func GetStreams(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetStreams(ctx, tenantIDs, q, limit)
+		return localStorage.GetStreams(qctx, limit)
 	}
-	return netstorageSelect.GetStreams(ctx, tenantIDs, q, limit)
+	return netstorageSelect.GetStreams(qctx, limit)
 }
 
-// GetStreamIDs executes q and returns streamIDs seen in query results.
+// GetStreamIDs executes the given qctx and returns streamIDs seen in query results.
 //
 // If limit > 0, then up to limit unique streamIDs are returned.
-func GetStreamIDs(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit uint64) ([]logstorage.ValueWithHits, error) {
+func GetStreamIDs(qctx *logstorage.QueryContext, limit uint64) ([]logstorage.ValueWithHits, error) {
 	if localStorage != nil {
-		return localStorage.GetStreamIDs(ctx, tenantIDs, q, limit)
+		return localStorage.GetStreamIDs(qctx, limit)
 	}
-	return netstorageSelect.GetStreamIDs(ctx, tenantIDs, q, limit)
+	return netstorageSelect.GetStreamIDs(qctx, limit)
 }
 
 func writeStorageMetrics(w io.Writer, strg *logstorage.Storage) {

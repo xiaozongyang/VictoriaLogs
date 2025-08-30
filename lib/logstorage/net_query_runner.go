@@ -2,15 +2,22 @@ package logstorage
 
 import (
 	"context"
+	"time"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
-// RunNetQueryFunc must run q and pass the query results to writeBlock.
-type RunNetQueryFunc func(ctx context.Context, tenantIDs []TenantID, q *Query, writeBlock WriteDataBlockFunc) error
+// RunNetQueryFunc must run qctx and pass the query results to writeBlock.
+type RunNetQueryFunc func(qctx *QueryContext, writeBlock WriteDataBlockFunc) error
 
 // NetQueryRunner is a runner for distributed query.
 type NetQueryRunner struct {
+	// startTime is the starting time for the query execution.
+	startTime time.Time
+
+	// qs is used for collecting query stats.
+	qs *QueryStats
+
 	// qRemote is the query to execute at remote storage nodes.
 	qRemote *Query
 
@@ -21,27 +28,29 @@ type NetQueryRunner struct {
 	writeBlock writeBlockResultFunc
 }
 
-// NewNetQueryRunner creates a new NetQueryRunner for the given q.
+// NewNetQueryRunner creates a new NetQueryRunner for the given qctx.
 //
 // runNetQuery is used for running distributed query.
 // q results are sent to writeNetBlock.
-func NewNetQueryRunner(ctx context.Context, tenantIDs []TenantID, q *Query, runNetQuery RunNetQueryFunc, writeNetBlock WriteDataBlockFunc) (*NetQueryRunner, error) {
-	runQuery := func(ctx context.Context, tenantIDs []TenantID, q *Query, writeBlock writeBlockResultFunc) error {
+func NewNetQueryRunner(qctx *QueryContext, runNetQuery RunNetQueryFunc, writeNetBlock WriteDataBlockFunc) (*NetQueryRunner, error) {
+	runQuery := func(qctx *QueryContext, writeBlock writeBlockResultFunc) error {
 		writeNetBlock := writeBlock.newDataBlockWriter()
-		return runNetQuery(ctx, tenantIDs, q, writeNetBlock)
+		return runNetQuery(qctx, writeNetBlock)
 	}
 
-	qNew, err := initSubqueries(ctx, tenantIDs, q, runQuery, false)
+	qNew, err := initSubqueries(qctx, runQuery, false)
 	if err != nil {
 		return nil, err
 	}
-	q = qNew
+	q := qNew
 
 	qRemote, pipesLocal := splitQueryToRemoteAndLocal(q)
 
 	writeBlock := writeNetBlock.newBlockResultWriter()
 
 	nqr := &NetQueryRunner{
+		startTime:  qctx.startTime,
+		qs:         qctx.QueryStats,
 		qRemote:    qRemote,
 		pipesLocal: pipesLocal,
 		writeBlock: writeBlock,
@@ -60,8 +69,7 @@ func (nqr *NetQueryRunner) Run(ctx context.Context, concurrency int, netSearch f
 		return netSearch(stopCh, nqr.qRemote, writeNetBlock)
 	}
 
-	qs := &queryStats{}
-	return runPipes(ctx, qs, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
+	return runPipes(ctx, nqr.qs, nqr.pipesLocal, search, nqr.writeBlock, concurrency, nqr.startTime)
 }
 
 // splitQueryToRemoteAndLocal splits q into remotely executed query and into locally executed pipes.
