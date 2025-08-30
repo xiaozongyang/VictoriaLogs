@@ -207,7 +207,11 @@ These metrics follow the Prometheus exposition format and can be used for monito
 
 ### vl_storage_per_query_processed_blocks
 **Type:** Histogram
-**Description:** The number of data blocks processed during query execution. This counts each block that passes initial filtering for further processing. High values suggest queries are scanning many blocks and may need more narrow [time filters](https://docs.victoriametrics.com/victorialogs/logsql/#time-filter) or [log stream filters](https://docs.victoriametrics.com/victorialogs/logsql/#stream-filter).
+**Description:** The number of data blocks processed during query execution. This counts all the blocks that pass initial filtering for further query processing. High values suggest queries are scanning many blocks and may need more narrow [time filters](https://docs.victoriametrics.com/victorialogs/logsql/#time-filter) or [log stream filters](https://docs.victoriametrics.com/victorialogs/logsql/#stream-filter). See also [`vl_storage_per_query_processed_rows`](#vl_storage_per_query_processed_rows).
+
+### vl_storage_per_query_processed_rows
+**Type:** Histogram
+**Description:** The number of log entries processed during query execution. This counts all the rows that pass initial filtering for further query processing. High values suggest queries are scanning many rows and may need more narrow [time filters](https://docs.victoriametrics.com/victorialogs/logsql/#time-filter) or [log stream filters](https://docs.victoriametrics.com/victorialogs/logsql/#stream-filter). See also [`vl_storage_per_query_processed_blocks`](#vl_storage_per_query_processed_blocks).
 
 ### vl_storage_per_query_read_values
 **Type:** Histogram

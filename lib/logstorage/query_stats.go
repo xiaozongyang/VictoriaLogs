@@ -21,6 +21,7 @@ var (
 	bytesReadPerQueryTotal *metrics.Histogram
 
 	blocksProcessedPerQuery                  *metrics.Histogram
+	rowsProcessedPerQuery                    *metrics.Histogram
 	valuesReadPerQuery                       *metrics.Histogram
 	timestampsReadPerQuery                   *metrics.Histogram
 	bytesProcessedPerQueryUncompressedValues *metrics.Histogram
@@ -37,6 +38,7 @@ func initQueryStats() {
 	bytesReadPerQueryTotal = metrics.NewHistogram(`vl_storage_per_query_total_read_bytes`)
 
 	blocksProcessedPerQuery = metrics.NewHistogram(`vl_storage_per_query_processed_blocks`)
+	rowsProcessedPerQuery = metrics.NewHistogram(`vl_storage_per_query_processed_rows`)
 	valuesReadPerQuery = metrics.NewHistogram(`vl_storage_per_query_read_values`)
 	timestampsReadPerQuery = metrics.NewHistogram(`vl_storage_per_query_read_timestamps`)
 	bytesProcessedPerQueryUncompressedValues = metrics.NewHistogram(`vl_storage_per_query_uncompressed_values_processed_bytes`)
@@ -55,6 +57,7 @@ func updateQueryStatsMetrics(qs *queryStats) {
 	bytesReadPerQueryTotal.Update(float64(qs.getBytesReadTotal()))
 
 	blocksProcessedPerQuery.Update(float64(qs.blocksProcessed))
+	rowsProcessedPerQuery.Update(float64(qs.rowsProcessed))
 	valuesReadPerQuery.Update(float64(qs.valuesRead))
 	timestampsReadPerQuery.Update(float64(qs.timestampsRead))
 	bytesProcessedPerQueryUncompressedValues.Update(float64(qs.bytesProcessedUncompressedValues))
@@ -83,6 +86,9 @@ type queryStats struct {
 	// blocksProcessed is the number of data blocks processed during query execution.
 	blocksProcessed uint64
 
+	// rowsProcessed is the number of log rows processed during query execution.
+	rowsProcessed uint64
+
 	// valuesRead is the number of log field values read during query exection.
 	valuesRead uint64
 
@@ -107,16 +113,19 @@ func (qs *queryStats) updateAtomic(src *queryStats) {
 	atomic.AddUint64(&qs.bytesReadBlockHeaders, src.bytesReadBlockHeaders)
 
 	atomic.AddUint64(&qs.blocksProcessed, src.blocksProcessed)
+	atomic.AddUint64(&qs.rowsProcessed, src.rowsProcessed)
 	atomic.AddUint64(&qs.valuesRead, src.valuesRead)
 	atomic.AddUint64(&qs.timestampsRead, src.timestampsRead)
 	atomic.AddUint64(&qs.bytesProcessedUncompressedValues, src.bytesProcessedUncompressedValues)
 }
 
 func pipeQueryStatsWriteResult(ppNext pipeProcessor, qs *queryStats) {
-	rcs := make([]resultColumn, 11)
+	var rcs []resultColumn
 
 	var buf []byte
-	addUint64Entry := func(rc *resultColumn, name string, value uint64) {
+	addUint64Entry := func(name string, value uint64) {
+		rcs = append(rcs, resultColumn{})
+		rc := &rcs[len(rcs)-1]
 		rc.name = name
 		bufLen := len(buf)
 		buf = marshalUint64String(buf, value)
@@ -124,19 +133,20 @@ func pipeQueryStatsWriteResult(ppNext pipeProcessor, qs *queryStats) {
 		rc.addValue(v)
 	}
 
-	addUint64Entry(&rcs[0], "bytesReadColumnsHeaders", qs.bytesReadColumnsHeaders)
-	addUint64Entry(&rcs[1], "bytesReadColumnsHeaderIndexes", qs.bytesReadColumnsHeaderIndexes)
-	addUint64Entry(&rcs[2], "bytesReadBloomFilters", qs.bytesReadBloomFilters)
-	addUint64Entry(&rcs[3], "bytesReadValues", qs.bytesReadValues)
-	addUint64Entry(&rcs[4], "bytesReadTimestamps", qs.bytesReadTimestamps)
-	addUint64Entry(&rcs[5], "bytesReadBlockHeaders", qs.bytesReadBlockHeaders)
+	addUint64Entry("bytesReadColumnsHeaders", qs.bytesReadColumnsHeaders)
+	addUint64Entry("bytesReadColumnsHeaderIndexes", qs.bytesReadColumnsHeaderIndexes)
+	addUint64Entry("bytesReadBloomFilters", qs.bytesReadBloomFilters)
+	addUint64Entry("bytesReadValues", qs.bytesReadValues)
+	addUint64Entry("bytesReadTimestamps", qs.bytesReadTimestamps)
+	addUint64Entry("bytesReadBlockHeaders", qs.bytesReadBlockHeaders)
 
-	addUint64Entry(&rcs[6], "bytesReadTotal", qs.getBytesReadTotal())
+	addUint64Entry("bytesReadTotal", qs.getBytesReadTotal())
 
-	addUint64Entry(&rcs[7], "blocksProcessed", qs.blocksProcessed)
-	addUint64Entry(&rcs[8], "valuesRead", qs.valuesRead)
-	addUint64Entry(&rcs[9], "timestampsRead", qs.timestampsRead)
-	addUint64Entry(&rcs[10], "bytesProcessedUncompressedValues", qs.bytesProcessedUncompressedValues)
+	addUint64Entry("blocksProcessed", qs.blocksProcessed)
+	addUint64Entry("rowsProcessed", qs.rowsProcessed)
+	addUint64Entry("valuesRead", qs.valuesRead)
+	addUint64Entry("timestampsRead", qs.timestampsRead)
+	addUint64Entry("bytesProcessedUncompressedValues", qs.bytesProcessedUncompressedValues)
 
 	var br blockResult
 	br.setResultColumns(rcs, 1)
@@ -161,6 +171,7 @@ func pipeQueryStatsUpdateAtomic(dst *queryStats, br *blockResult) {
 	qs.bytesReadBlockHeaders = getUint64Entry("bytesReadBlockHeaders")
 
 	qs.blocksProcessed = getUint64Entry("blocksProcessed")
+	qs.rowsProcessed = getUint64Entry("rowsProcessed")
 	qs.valuesRead = getUint64Entry("valuesRead")
 	qs.timestampsRead = getUint64Entry("timestampsRead")
 	qs.bytesProcessedUncompressedValues = getUint64Entry("bytesProcessedUncompressedValues")

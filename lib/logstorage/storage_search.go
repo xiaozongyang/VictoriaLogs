@@ -1077,6 +1077,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *querySt
 					}
 					bsw.reset()
 					ssLocal.blocksProcessed++
+					ssLocal.rowsProcessed += uint64(bs.br.rowsLen)
 				}
 				bswb.bsws = bswb.bsws[:0]
 				putBlockSearchWorkBatch(bswb)

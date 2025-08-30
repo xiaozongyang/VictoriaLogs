@@ -33,6 +33,7 @@ func TestPipeQueryStats(t *testing.T) {
 	f(`query_stats`, [][]Field{}, [][]Field{
 		{
 			{"blocksProcessed", "0"},
+			{"rowsProcessed", "0"},
 			{"bytesReadBlockHeaders", "0"},
 			{"bytesReadBloomFilters", "0"},
 			{"bytesReadColumnsHeaderIndexes", "0"},
@@ -62,6 +63,7 @@ func TestPipeQueryStats(t *testing.T) {
 	}, [][]Field{
 		{
 			{"blocksProcessed", "0"},
+			{"rowsProcessed", "0"},
 			{"bytesReadBlockHeaders", "0"},
 			{"bytesReadBloomFilters", "0"},
 			{"bytesReadColumnsHeaderIndexes", "0"},

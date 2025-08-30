@@ -632,20 +632,20 @@ func TestStorageRunQuery(t *testing.T) {
 		})
 	})
 	t.Run("query_stats-sum_len", func(t *testing.T) {
-		f(t, `* | sum_len(*) | query_stats | keep timestampsRead, valuesRead, bytesProcessedUncompressedValues`, [][]Field{
+		f(t, `* | sum_len(*) | query_stats | keep timestampsRead, valuesRead, rowsProcessed`, [][]Field{
 			{
 				{"timestampsRead", "0"},
 				{"valuesRead", "1155"},
-				{"bytesProcessedUncompressedValues", "26432"},
+				{"rowsProcessed", "1155"},
 			},
 		})
 	})
 	t.Run("query_stats-timestamp-math", func(t *testing.T) {
-		f(t, `* | math _time + 123 as _time | query_stats | keep timestampsRead, valuesRead, bytesProcessedUncompressedValues`, [][]Field{
+		f(t, `* | math _time + 123 as _time | query_stats | keep timestampsRead, valuesRead, rowsProcessed`, [][]Field{
 			{
 				{"timestampsRead", "1155"},
 				{"valuesRead", "0"},
-				{"bytesProcessedUncompressedValues", "0"},
+				{"rowsProcessed", "1155"},
 			},
 		})
 	})
