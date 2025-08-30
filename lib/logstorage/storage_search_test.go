@@ -631,6 +631,22 @@ func TestStorageRunQuery(t *testing.T) {
 			},
 		})
 	})
+	t.Run("query_stats-sum_len", func(t *testing.T) {
+		f(t, `* | sum_len(*) | query_stats | keep timestampsRead, valuesRead`, [][]Field{
+			{
+				{"timestampsRead", "0"},
+				{"valuesRead", "1155"},
+			},
+		})
+	})
+	t.Run("query_stats-timestamp-math", func(t *testing.T) {
+		f(t, `* | math _time + 123 as _time | query_stats | keep timestampsRead, valuesRead`, [][]Field{
+			{
+				{"timestampsRead", "1155"},
+				{"valuesRead", "0"},
+			},
+		})
+	})
 	t.Run("_stream_id-filter", func(t *testing.T) {
 		f(t, `_stream_id:in(tenant.id:2 | fields _stream_id) | stats count() rows`, [][]Field{
 			{
