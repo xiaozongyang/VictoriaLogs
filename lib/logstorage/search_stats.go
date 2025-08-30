@@ -20,6 +20,9 @@ var (
 	bytesReadPerQueryTotal *metrics.Histogram
 
 	blocksProcessedPerQuery *metrics.Histogram
+
+	valuesReadPerQuery     *metrics.Histogram
+	timestampsReadPerQuery *metrics.Histogram
 )
 
 func initSearchStats() {
@@ -33,6 +36,9 @@ func initSearchStats() {
 	bytesReadPerQueryTotal = metrics.NewHistogram(`vl_storage_per_query_total_read_bytes`)
 
 	blocksProcessedPerQuery = metrics.NewHistogram(`vl_storage_per_query_processed_blocks`)
+
+	valuesReadPerQuery = metrics.NewHistogram(`vl_storage_per_query_read_values`)
+	timestampsReadPerQuery = metrics.NewHistogram(`vl_storage_per_query_read_timestamps`)
 }
 
 func updateSearchMetrics(ss *searchStats) {
@@ -50,6 +56,9 @@ func updateSearchMetrics(ss *searchStats) {
 	bytesReadPerQueryTotal.Update(float64(bytesReadTotal))
 
 	blocksProcessedPerQuery.Update(float64(ss.blocksProcessed))
+
+	valuesReadPerQuery.Update(float64(ss.valuesRead))
+	timestampsReadPerQuery.Update(float64(ss.timestampsRead))
 }
 
 // searchStats contains various stats related to the search.
@@ -74,6 +83,12 @@ type searchStats struct {
 
 	// blocksProcessed is the number of data blocks processed during query execution.
 	blocksProcessed uint64
+
+	// valuesRead is the number of log field values read during query exection.
+	valuesRead uint64
+
+	// timestampsRead is the number of timestamps read during query execution.
+	timestampsRead uint64
 }
 
 func (ss *searchStats) updateAtomic(src *searchStats) {
@@ -85,4 +100,7 @@ func (ss *searchStats) updateAtomic(src *searchStats) {
 	atomic.AddUint64(&ss.bytesReadBlockHeaders, src.bytesReadBlockHeaders)
 
 	atomic.AddUint64(&ss.blocksProcessed, src.blocksProcessed)
+
+	atomic.AddUint64(&ss.valuesRead, src.valuesRead)
+	atomic.AddUint64(&ss.timestampsRead, src.timestampsRead)
 }

@@ -202,6 +202,7 @@ func initPipeParsers() {
 		"order":             parsePipeSort,
 		"pack_json":         parsePipePackJSON,
 		"pack_logfmt":       parsePipePackLogfmt,
+		"query_stats":       parsePipeQueryStats,
 		"rename":            parsePipeRename,
 		"replace":           parsePipeReplace,
 		"replace_regexp":    parsePipeReplaceRegexp,

@@ -143,7 +143,7 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 		return nil
 	}
 
-	err = runPipes(ctx, q.pipes, search, writeBlock, workersCount)
+	err = runPipes(ctx, ss, q.pipes, search, writeBlock, workersCount)
 
 	updateSearchMetrics(ss)
 
@@ -153,7 +153,7 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 // searchFunc must perform search and pass its results to writeBlock.
 type searchFunc func(stopCh <-chan struct{}, writeBlock writeBlockResultFunc) error
 
-func runPipes(ctx context.Context, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int) error {
+func runPipes(ctx context.Context, ss *searchStats, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int) error {
 	stopCh := ctx.Done()
 	if len(pipes) == 0 {
 		// Fast path when there are no pipes
@@ -168,6 +168,7 @@ func runPipes(ctx context.Context, pipes []pipe, search searchFunc, writeBlock w
 		p := pipes[i]
 		ctxChild, cancel := context.WithCancel(ctx)
 		pp = p.newPipeProcessor(concurrency, stopCh, cancel, pp)
+
 		cancels[i] = cancel
 		pps[i] = pp
 
@@ -179,6 +180,12 @@ func runPipes(ctx context.Context, pipes []pipe, search searchFunc, writeBlock w
 
 	var errFlush error
 	for i, pp := range pps {
+		ps, ok := pp.(*pipeQueryStatsProcessor)
+		if ok {
+			// Update the collected search stats at query_stats pipe.
+			ps.ss.updateAtomic(ss)
+		}
+
 		if err := pp.flush(); err != nil && errFlush == nil {
 			errFlush = err
 		}

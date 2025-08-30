@@ -60,21 +60,48 @@ func (nqr *NetQueryRunner) Run(ctx context.Context, concurrency int, netSearch f
 		return netSearch(stopCh, nqr.qRemote, writeNetBlock)
 	}
 
-	return runPipes(ctx, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
+	ss := &searchStats{}
+	return runPipes(ctx, ss, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
 }
 
 // splitQueryToRemoteAndLocal splits q into remotely executed query and into locally executed pipes.
 func splitQueryToRemoteAndLocal(q *Query) (*Query, []pipe) {
 	timestamp := q.GetTimestamp()
-
 	qRemote := q.Clone(timestamp)
 	qRemote.DropAllPipes()
 
+	pipesRemote, pipesLocal := getRemoteAndLocalPipes(q)
+	qRemote.pipes = pipesRemote
+
+	// Limit fields to select at the remote storage.
+	pf := getNeededColumns(pipesLocal)
+	qRemote.addFieldsFilters(pf)
+
+	return qRemote, pipesLocal
+}
+
+func getRemoteAndLocalPipes(q *Query) ([]pipe, []pipe) {
+	timestamp := q.GetTimestamp()
+
+	var pipesRemote []pipe
 	var pipesLocal []pipe
-	for i := range q.pipes {
-		pRemote, psLocal := q.pipes[i].splitToRemoteAndLocal(timestamp)
+
+	for i, p := range q.pipes {
+		if _, ok := p.(*pipeQueryStats); ok {
+			// Special case for query_stats pipe: push all the pipes until query_stats to remote side.
+			pRemote, psLocal := p.splitToRemoteAndLocal(timestamp)
+			pipesRemote = append(pipesRemote[:0], q.pipes[:i]...)
+			pipesRemote = append(pipesRemote, pRemote)
+			pipesLocal = append(pipesLocal, psLocal...)
+			pipesLocal = append(pipesLocal, q.pipes[i+1:]...)
+			return pipesRemote, pipesLocal
+		}
+	}
+
+	for i, p := range q.pipes {
+		pRemote, psLocal := p.splitToRemoteAndLocal(timestamp)
 		if pRemote != nil {
-			qRemote.pipes = append(qRemote.pipes, pRemote)
+			pipesRemote = append(pipesRemote, pRemote)
 			if len(psLocal) == 0 {
 				continue
 			}
@@ -83,14 +110,11 @@ func splitQueryToRemoteAndLocal(q *Query) (*Query, []pipe) {
 		if len(psLocal) == 0 {
 			logger.Panicf("BUG: psLocal must be non non-empty here")
 		}
+
 		pipesLocal = append(pipesLocal, psLocal...)
 		pipesLocal = append(pipesLocal, q.pipes[i+1:]...)
-		break
+		return pipesRemote, pipesLocal
 	}
 
-	// Limit fields to select at the remote storage.
-	pf := getNeededColumns(pipesLocal)
-	qRemote.addFieldsFilters(pf)
-
-	return qRemote, pipesLocal
+	return nil, nil
 }

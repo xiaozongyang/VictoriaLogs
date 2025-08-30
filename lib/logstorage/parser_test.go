@@ -1710,6 +1710,10 @@ func TestParseQuery_Success(t *testing.T) {
 	// multiple offset pipes
 	f(`foo | offset 10 | offset 100`, `foo | offset 10 | offset 100`)
 
+	// query_stats pipe
+	f(`* | query_stats`, `* | query_stats`)
+	f(`* | count() x | query_stats`, `* | stats count(*) as x | query_stats`)
+
 	// sample pipe
 	f(`* | sample 10`, `* | sample 10`)
 
@@ -2347,6 +2351,10 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`foo | blocks_count x y`)
 	f(`foo | blocks_count x, y`)
 
+	// invalid query_stats
+	f(`foo | query_stats bar`)
+	f(`foo | query_stats 123`)
+
 	// invalid generate_sequence
 	f(`foo | generate_sequence`)
 	f(`foo | generate_sequence foo`)
@@ -2772,6 +2780,10 @@ func TestQueryGetNeededColumns(t *testing.T) {
 	f(`* | fields x,y | field_names as bar | fields baz`, `x,y`, ``)
 	f(`* | rm x,y | field_names as bar | fields baz`, `*`, `x,y`)
 
+	f(`* | query_stats`, `*`, ``)
+	f(`* | query_stats | fields foo`, `*`, ``)
+	f(`* | query_stats | rm foo`, `*`, ``)
+
 	f(`* | block_stats`, `*`, ``)
 	f(`* | block_stats | fields foo`, `*`, ``)
 	f(`* | block_stats | rm foo`, `*`, ``)
@@ -2930,6 +2942,7 @@ func TestQueryGetNeededColumns(t *testing.T) {
 	f(`* | offset 10 | count() r1`, ``, ``)
 	f(`* | pack_json | count() r1`, ``, ``)
 	f(`* | pack_json fields(a,b) | count() r1`, ``, ``)
+	f(`* | query_stats | count() r1`, `*`, ``)
 	f(`* | rename a b, c d | count() r1`, ``, ``)
 	f(`* | replace ("a", "b") at x | count() r1`, ``, ``)
 	f(`* | replace if (q:w p:a) ("a", "b") at x | count() r1`, `p,q`, ``)
@@ -3174,6 +3187,7 @@ func TestQueryCanReturnLastNResults(t *testing.T) {
 	f("* | pack_json as _time", false)
 	f("* | pack_logfmt", true)
 	f("* | pack_logfmt as _time", false)
+	f("* | query_stats", false)
 	f("* | rename foo bar", true)
 	f("* | replace ('foo', 'bar')", true)
 	f("* | replace_regexp ('foo', 'bar')", true)
@@ -3241,6 +3255,7 @@ func TestQueryCanLiveTail(t *testing.T) {
 	f("* | offset 10", false)
 	f("* | pack_json", true)
 	f("* | pack_logfmt", true)
+	f("* | query_stats", false)
 	f("* | rename a b", true)
 	f("* | replace ('foo', 'bar')", true)
 	f("* | replace_regexp ('foo', 'bar')", true)
@@ -3474,6 +3489,7 @@ func TestQueryGetStatsByFields_Failure(t *testing.T) {
 	f(`foo | by (x) count() | fields a*, b`)
 	f(`foo | count() | pack_json`)
 	f(`foo | count() | pack_logfmt`)
+	f(`foo | count() | query_stats`)
 	f(`foo | rename x y`)
 	f(`foo | count() | replace ("foo", "bar")`)
 	f(`foo | count() | replace_regexp ("foo.+bar", "baz")`)

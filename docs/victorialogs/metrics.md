@@ -209,6 +209,14 @@ These metrics follow the Prometheus exposition format and can be used for monito
 **Type:** Histogram  
 **Description:** Number of data blocks processed during query execution. This counts each block that passes initial filtering and requires detailed processing. High values suggest queries are scanning many blocks and may need better time ranges or filters.
 
+### vl_storage_per_query_read_values
+**Type:** Histogram
+**Description:** Number of field values read during query execution.
+
+### vl_storage_per_query_read_timestamps
+**Type:** Histogram
+**Description:** Number of timestamps read during query execution.
+
 ## Concurrency and Resource Metrics
 
 ### vl_concurrent_select_limit_reached_total

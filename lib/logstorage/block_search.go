@@ -471,6 +471,7 @@ func (bs *blockSearch) getValuesForColumn(ch *columnHeader) []string {
 	bloomValuesFile.values.MustReadAt(bb.B, int64(ch.valuesOffset))
 
 	bs.ss.bytesReadValues += ch.valuesSize
+	bs.ss.valuesRead += bs.bsw.bh.rowsCount
 
 	values = getStringBucket()
 	var err error
@@ -521,6 +522,7 @@ func (bs *blockSearch) getTimestamps() []int64 {
 	p.timestampsFile.MustReadAt(bb.B, int64(th.blockOffset))
 
 	bs.ss.bytesReadTimestamps += blockSize
+	bs.ss.timestampsRead += bs.bsw.bh.rowsCount
 
 	rowsCount := int(bs.bsw.bh.rowsCount)
 	timestamps = encoding.GetInt64s(rowsCount)

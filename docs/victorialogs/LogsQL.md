@@ -1346,6 +1346,7 @@ user_id:value_type(uint64)
 See also:
 
 - [`block_stats` pipe](#block_stats-pipe)
+- [`query_stats` pipe](#query_stats-pipe)
 - [Logical filter](#logical-filter)
 
 ### eq_field filter
@@ -1501,6 +1502,7 @@ LogsQL supports the following pipes:
 - [`offset`](#offset-pipe) skips the given number of selected logs.
 - [`pack_json`](#pack_json-pipe) packs [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) into JSON object.
 - [`pack_logfmt`](#pack_logfmt-pipe) packs [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) into [logfmt](https://brandur.org/logfmt) message.
+- [`query_stats`](#query_stats-pipe) returns query execution statistics.
 - [`rename`](#rename-pipe) renames [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`replace`](#replace-pipe) replaces substrings in the specified [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`replace_regexp`](#replace_regexp-pipe) updates [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) with regular expressions.
@@ -1536,6 +1538,7 @@ The `block_stats` pipe is needed mostly for debugging purposes.
 
 See also:
 
+- [`query_stats` pipe](#query_stats-pipe)
 - [`value_type` filter](#value_type-filter)
 - [`blocks_count` pipe](#blocks_count-pipe)
 - [`len` pipe](#len-pipe)
@@ -1546,6 +1549,7 @@ See also:
 
 See also:
 
+- [`query_stats` pipe](#query_stats-pipe)
 - [`block_stats` pipe](#block_stats-pipe)
 - [`len` pipe](#len-pipe)
 
@@ -2564,6 +2568,17 @@ See also:
 
 - [`pack_json` pipe](#pack_json-pipe)
 - [`unpack_logfmt` pipe](#unpack_logfmt-pipe)
+
+### query_stats pipe
+
+The `<q> | query_stats` [pipe](#pipes) returns execution statistics for the given [query `<q>`](#query-syntax).
+
+This pipe is useful for optimizing slow queries.
+
+See also:
+
+- [`block_stats` pipe](#block_stats-pipe)
+- [query troubleshooting](#troubleshooting)
 
 ### rename pipe
 
@@ -4428,6 +4443,8 @@ When you know which fields are expensive, you can decide whether to drop the noi
 
 You can find more details here: [How to determine which log fields occupy the most of disk space?](https://docs.victoriametrics.com/victorialogs/faq/#how-to-determine-which-log-fields-occupy-the-most-of-disk-space).
 
+It might be useful to add the [`query_stats` pipe](#query_stats-pipe) to the end of the query in order to understand how much data of different types the query reads and processes.
+
 ### Profile pipes incrementally
 
 Suppose you need to profile and optimize the following query:
@@ -4500,6 +4517,8 @@ _time:5m error contains_any("access denied", "unauthorized", "403") "user_id=("
 ```
 
 If the query becomes slow or starts using a lot of RAM after adding the next filter or pipe, you will know exactly which part of the query to fix.
+
+It might be useful to add the [`query_stats` pipe](#query_stats-pipe) to the end of the query in order to understand how much data of different types the query reads and processes.
 
 If you find a slow filter or pipe, try these ideas:
 
