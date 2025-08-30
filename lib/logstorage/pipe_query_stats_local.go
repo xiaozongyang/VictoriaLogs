@@ -1,8 +1,6 @@
 package logstorage
 
 import (
-	"sync"
-
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
@@ -55,22 +53,17 @@ func (ps *pipeQueryStatsLocal) newPipeProcessor(_ int, stopCh <-chan struct{}, _
 type pipeQueryStatsLocalProcessor struct {
 	ppNext pipeProcessor
 
-	ss     searchStats
-	ssLock sync.Mutex
+	qs queryStats
 }
 
 func (psp *pipeQueryStatsLocalProcessor) writeBlock(_ uint, br *blockResult) {
 	if br.rowsLen <= 0 {
 		return
 	}
-
-	psp.ssLock.Lock()
-	defer psp.ssLock.Unlock()
-
-	pipeQueryStatsUpdate(&psp.ss, br)
+	pipeQueryStatsUpdateAtomic(&psp.qs, br)
 }
 
 func (psp *pipeQueryStatsLocalProcessor) flush() error {
-	pipeQueryStatsWriteResult(psp.ppNext, &psp.ss)
+	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs)
 	return nil
 }

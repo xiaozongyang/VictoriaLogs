@@ -60,8 +60,8 @@ func (nqr *NetQueryRunner) Run(ctx context.Context, concurrency int, netSearch f
 		return netSearch(stopCh, nqr.qRemote, writeNetBlock)
 	}
 
-	ss := &searchStats{}
-	return runPipes(ctx, ss, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
+	qs := &queryStats{}
+	return runPipes(ctx, qs, nqr.pipesLocal, search, nqr.writeBlock, concurrency)
 }
 
 // splitQueryToRemoteAndLocal splits q into remotely executed query and into locally executed pipes.

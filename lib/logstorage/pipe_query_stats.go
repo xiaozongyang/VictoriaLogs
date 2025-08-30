@@ -57,8 +57,12 @@ type pipeQueryStatsProcessor struct {
 	ps     *pipeQueryStats
 	ppNext pipeProcessor
 
-	// ss must be updated before flush() call.
-	ss searchStats
+	// qs must be initialized via setQueryStats() before flush() call.
+	qs queryStats
+}
+
+func (psp *pipeQueryStatsProcessor) setQueryStats(qs *queryStats) {
+	psp.qs = *qs
 }
 
 func (psp *pipeQueryStatsProcessor) writeBlock(_ uint, _ *blockResult) {
@@ -66,7 +70,7 @@ func (psp *pipeQueryStatsProcessor) writeBlock(_ uint, _ *blockResult) {
 }
 
 func (psp *pipeQueryStatsProcessor) flush() error {
-	pipeQueryStatsWriteResult(psp.ppNext, &psp.ss)
+	pipeQueryStatsWriteResult(psp.ppNext, &psp.qs)
 	return nil
 }
 

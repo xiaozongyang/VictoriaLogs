@@ -134,18 +134,18 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 		fieldsFilter: fieldsFilter,
 		timeOffset:   -q.opts.timeOffset,
 	}
-	ss := &searchStats{}
+	qs := &queryStats{}
 
 	workersCount := q.GetConcurrency()
 
 	search := func(stopCh <-chan struct{}, writeBlockToPipes writeBlockResultFunc) error {
-		s.search(workersCount, so, ss, stopCh, writeBlockToPipes)
+		s.search(workersCount, so, qs, stopCh, writeBlockToPipes)
 		return nil
 	}
 
-	err = runPipes(ctx, ss, q.pipes, search, writeBlock, workersCount)
+	err = runPipes(ctx, qs, q.pipes, search, writeBlock, workersCount)
 
-	updateSearchMetrics(ss)
+	updateQueryStatsMetrics(qs)
 
 	return err
 }
@@ -153,7 +153,7 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 // searchFunc must perform search and pass its results to writeBlock.
 type searchFunc func(stopCh <-chan struct{}, writeBlock writeBlockResultFunc) error
 
-func runPipes(ctx context.Context, ss *searchStats, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int) error {
+func runPipes(ctx context.Context, qs *queryStats, pipes []pipe, search searchFunc, writeBlock writeBlockResultFunc, concurrency int) error {
 	stopCh := ctx.Done()
 	if len(pipes) == 0 {
 		// Fast path when there are no pipes
@@ -183,7 +183,7 @@ func runPipes(ctx context.Context, ss *searchStats, pipes []pipe, search searchF
 		ps, ok := pp.(*pipeQueryStatsProcessor)
 		if ok {
 			// Update the collected search stats at query_stats pipe.
-			ps.ss.updateAtomic(ss)
+			ps.setQueryStats(qs)
 		}
 
 		if err := pp.flush(); err != nil && errFlush == nil {
@@ -1048,14 +1048,14 @@ func (db *DataBlock) initFromBlockResult(br *blockResult) {
 // search searches for the matching rows according to so.
 //
 // It calls writeBlock for each matching block.
-func (s *Storage) search(workersCount int, so *genericSearchOptions, ss *searchStats, stopCh <-chan struct{}, writeBlock writeBlockResultFunc) {
+func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *queryStats, stopCh <-chan struct{}, writeBlock writeBlockResultFunc) {
 	// Spin up workers
 	var wgWorkers sync.WaitGroup
 	workCh := make(chan *blockSearchWorkBatch, workersCount)
 	wgWorkers.Add(workersCount)
 	for i := 0; i < workersCount; i++ {
 		go func(workerID uint) {
-			var ssLocal searchStats
+			var ssLocal queryStats
 			bs := getBlockSearch()
 			bm := getBitmap(0)
 			for bswb := range workCh {
@@ -1083,7 +1083,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, ss *searchS
 			}
 			putBlockSearch(bs)
 			putBitmap(bm)
-			ss.updateAtomic(&ssLocal)
+			qs.updateAtomic(&ssLocal)
 			wgWorkers.Done()
 		}(uint(i))
 	}
@@ -1120,11 +1120,11 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, ss *searchS
 		partitionSearchConcurrencyLimitCh <- struct{}{}
 		wgSearchers.Add(1)
 		go func(idx int, pt *partition) {
-			var ssLocal searchStats
+			var ssLocal queryStats
 
 			psfs[idx] = pt.search(sf, f, so, &ssLocal, workCh, stopCh)
 
-			ss.updateAtomic(&ssLocal)
+			qs.updateAtomic(&ssLocal)
 
 			wgSearchers.Done()
 			<-partitionSearchConcurrencyLimitCh
@@ -1154,7 +1154,7 @@ var partitionSearchConcurrencyLimitCh = make(chan struct{}, cgroup.AvailableCPUs
 
 type partitionSearchFinalizer func()
 
-func (pt *partition) search(sf *StreamFilter, f filter, so *genericSearchOptions, ss *searchStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) partitionSearchFinalizer {
+func (pt *partition) search(sf *StreamFilter, f filter, so *genericSearchOptions, qs *queryStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) partitionSearchFinalizer {
 	if needStop(stopCh) {
 		// Do not spend CPU time on search, since it is already stopped.
 		return func() {}
@@ -1183,7 +1183,7 @@ func (pt *partition) search(sf *StreamFilter, f filter, so *genericSearchOptions
 		filter:       f,
 		fieldsFilter: so.fieldsFilter,
 	}
-	return pt.ddb.search(soInternal, ss, workCh, stopCh)
+	return pt.ddb.search(soInternal, qs, workCh, stopCh)
 }
 
 func intersectStreamIDs(a, b []streamID) []streamID {
@@ -1245,7 +1245,7 @@ func initStreamFilters(tenantIDs []TenantID, idb *indexdb, f filter) filter {
 	return f
 }
 
-func (ddb *datadb) search(so *searchOptions, ss *searchStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) partitionSearchFinalizer {
+func (ddb *datadb) search(so *searchOptions, qs *queryStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) partitionSearchFinalizer {
 	// Select parts with data for the given time range
 	ddb.partsLock.Lock()
 	pws := appendPartsInTimeRange(nil, ddb.bigParts, so.minTimestamp, so.maxTimestamp)
@@ -1261,7 +1261,7 @@ func (ddb *datadb) search(so *searchOptions, ss *searchStats, workCh chan<- *blo
 
 	// Apply search to matching parts
 	for _, pw := range pws {
-		pw.p.search(so, ss, workCh, stopCh)
+		pw.p.search(so, qs, workCh, stopCh)
 	}
 
 	return func() {
@@ -1271,12 +1271,12 @@ func (ddb *datadb) search(so *searchOptions, ss *searchStats, workCh chan<- *blo
 	}
 }
 
-func (p *part) search(so *searchOptions, ss *searchStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
+func (p *part) search(so *searchOptions, qs *queryStats, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
 	bhss := getBlockHeaders()
 	if len(so.tenantIDs) > 0 {
-		p.searchByTenantIDs(so, ss, bhss, workCh, stopCh)
+		p.searchByTenantIDs(so, qs, bhss, workCh, stopCh)
 	} else {
-		p.searchByStreamIDs(so, ss, bhss, workCh, stopCh)
+		p.searchByStreamIDs(so, qs, bhss, workCh, stopCh)
 	}
 	putBlockHeaders(bhss)
 }
@@ -1308,7 +1308,7 @@ func (bhss *blockHeaders) reset() {
 	bhss.bhs = bhs[:0]
 }
 
-func (p *part) searchByTenantIDs(so *searchOptions, ss *searchStats, bhss *blockHeaders, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
+func (p *part) searchByTenantIDs(so *searchOptions, qs *queryStats, bhss *blockHeaders, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
 	// it is assumed that tenantIDs are sorted
 	tenantIDs := so.tenantIDs
 
@@ -1365,7 +1365,7 @@ func (p *part) searchByTenantIDs(so *searchOptions, ss *searchStats, bhss *block
 			continue
 		}
 
-		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p, ss)
+		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p, qs)
 
 		bhs := bhss.bhs
 		for len(bhs) > 0 {
@@ -1410,7 +1410,7 @@ func (p *part) searchByTenantIDs(so *searchOptions, ss *searchStats, bhss *block
 	}
 }
 
-func (p *part) searchByStreamIDs(so *searchOptions, ss *searchStats, bhss *blockHeaders, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
+func (p *part) searchByStreamIDs(so *searchOptions, qs *queryStats, bhss *blockHeaders, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
 	// it is assumed that streamIDs are sorted
 	streamIDs := so.streamIDs
 
@@ -1468,7 +1468,7 @@ func (p *part) searchByStreamIDs(so *searchOptions, ss *searchStats, bhss *block
 			continue
 		}
 
-		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p, ss)
+		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p, qs)
 
 		bhs := bhss.bhs
 		for len(bhs) > 0 {
