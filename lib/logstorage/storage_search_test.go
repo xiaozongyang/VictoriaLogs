@@ -641,7 +641,7 @@ func TestStorageRunQuery(t *testing.T) {
 		})
 	})
 	t.Run("query_stats-timestamp-math", func(t *testing.T) {
-		f(t, `* | math _time + 123 as _time | query_stats | keep timestampsRead, valuesRead, rowsProcessed`, [][]Field{
+		f(t, `* | math _time + 123 as _time | keep _time | query_stats | keep timestampsRead, valuesRead, rowsProcessed`, [][]Field{
 			{
 				{"timestampsRead", "1155"},
 				{"valuesRead", "0"},

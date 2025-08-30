@@ -3,6 +3,8 @@ package logstorage
 import (
 	"fmt"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil"
+
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/prefixfilter"
 )
 
@@ -57,16 +59,31 @@ type pipeQueryStatsProcessor struct {
 	ps     *pipeQueryStats
 	ppNext pipeProcessor
 
+	shards atomicutil.Slice[pipeQueryStatsProcessorShard]
+
 	// qs must be initialized via setQueryStats() before flush() call.
 	qs queryStats
+}
+
+type pipeQueryStatsProcessorShard struct {
+	// sink is used for preventing from the elimination of the loop inside writeBlock by too smart compiler
+	sink int
 }
 
 func (psp *pipeQueryStatsProcessor) setQueryStats(qs *queryStats) {
 	psp.qs = *qs
 }
 
-func (psp *pipeQueryStatsProcessor) writeBlock(_ uint, _ *blockResult) {
-	// Nothing to do
+func (psp *pipeQueryStatsProcessor) writeBlock(workerID uint, br *blockResult) {
+	// Read all the data from br in order to emulate the default behaviour
+	// when this data is returned back to the client if there is no query_stats pipe at the end of the query.
+	shard := psp.shards.Get(workerID)
+
+	cs := br.getColumns()
+	for _, c := range cs {
+		values := c.getValues(br)
+		shard.sink += len(values)
+	}
 }
 
 func (psp *pipeQueryStatsProcessor) flush() error {
