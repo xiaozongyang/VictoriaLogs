@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [querying](https://docs.victoriametrics.com/victorialogs/querying/): expose `vl_storage_per_query_found_rows` [histogram](https://docs.victoriametrics.com/keyconcepts/#histogram) at [`/metrics`](https://docs.victoriametrics.com/victorialogs/#monitoring) page, which shows the number of log entries found per each query.
+
 ## [v1.31.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.31.0)
 
 Released at 2025-08-31

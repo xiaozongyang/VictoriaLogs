@@ -643,29 +643,29 @@ func TestStorageRunQuery(t *testing.T) {
 		})
 	})
 	t.Run("query_stats-sum_len", func(t *testing.T) {
-		f(t, `* | sum_len(*) | query_stats | keep TimestampsRead, ValuesRead, RowsProcessed`, [][]Field{
+		f(t, `* | sum_len(*) | query_stats | keep TimestampsRead, ValuesRead, RowsFound`, [][]Field{
 			{
 				{"TimestampsRead", "0"},
 				{"ValuesRead", "1155"},
-				{"RowsProcessed", "1155"},
+				{"RowsFound", "1155"},
 			},
 		})
 	})
 	t.Run("query_stats-subquery", func(t *testing.T) {
-		f(t, `non-existing-field:in("message" | uniq tenant.id) | query_stats | keep TimestampsRead, ValuesRead, RowsProcessed`, [][]Field{
+		f(t, `non-existing-field:in("message" | uniq tenant.id) | query_stats | keep TimestampsRead, ValuesRead, RowsFound`, [][]Field{
 			{
 				{"TimestampsRead", "0"},
 				{"ValuesRead", "1155"},
-				{"RowsProcessed", "1155"},
+				{"RowsFound", "1155"},
 			},
 		})
 	})
 	t.Run("query_stats-timestamp-math", func(t *testing.T) {
-		f(t, `* | math _time + 123 as _time | keep _time | query_stats | keep TimestampsRead, ValuesRead, RowsProcessed`, [][]Field{
+		f(t, `* | math _time + 123 as _time | keep _time | query_stats | keep TimestampsRead, ValuesRead, RowsFound`, [][]Field{
 			{
 				{"TimestampsRead", "1155"},
 				{"ValuesRead", "0"},
-				{"RowsProcessed", "1155"},
+				{"RowsFound", "1155"},
 			},
 		})
 	})

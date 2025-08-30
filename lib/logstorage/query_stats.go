@@ -33,6 +33,9 @@ type QueryStats struct {
 	// RowsProcessed is the number of log rows processed during query execution.
 	RowsProcessed uint64
 
+	// RowsFound is the number of rows found by the query.
+	RowsFound uint64
+
 	// ValuesRead is the number of log field values read during query exection.
 	ValuesRead uint64
 
@@ -60,6 +63,7 @@ func (qs *QueryStats) UpdateAtomic(src *QueryStats) {
 
 	atomic.AddUint64(&qs.BlocksProcessed, src.BlocksProcessed)
 	atomic.AddUint64(&qs.RowsProcessed, src.RowsProcessed)
+	atomic.AddUint64(&qs.RowsFound, src.RowsFound)
 	atomic.AddUint64(&qs.ValuesRead, src.ValuesRead)
 	atomic.AddUint64(&qs.TimestampsRead, src.TimestampsRead)
 	atomic.AddUint64(&qs.BytesProcessedUncompressedValues, src.BytesProcessedUncompressedValues)
@@ -95,6 +99,7 @@ func (qs *QueryStats) UpdateFromDataBlock(db *DataBlock) error {
 
 	qs.BlocksProcessed += getUint64Entry("BlocksProcessed")
 	qs.RowsProcessed += getUint64Entry("RowsProcessed")
+	qs.RowsFound += getUint64Entry("RowsFound")
 	qs.ValuesRead += getUint64Entry("ValuesRead")
 	qs.TimestampsRead += getUint64Entry("TimestampsRead")
 	qs.BytesProcessedUncompressedValues += getUint64Entry("BytesProcessedUncompressedValues")
@@ -155,6 +160,7 @@ func (qs *QueryStats) addEntries(addUint64Entry func(name string, value uint64),
 
 	addUint64Entry("BlocksProcessed", qs.BlocksProcessed)
 	addUint64Entry("RowsProcessed", qs.RowsProcessed)
+	addUint64Entry("RowsFound", qs.RowsFound)
 	addUint64Entry("ValuesRead", qs.ValuesRead)
 	addUint64Entry("TimestampsRead", qs.TimestampsRead)
 	addUint64Entry("BytesProcessedUncompressedValues", qs.BytesProcessedUncompressedValues)

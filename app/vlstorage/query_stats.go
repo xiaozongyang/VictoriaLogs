@@ -18,6 +18,7 @@ var (
 
 	blocksProcessedPerQuery                  = metrics.NewHistogram(`vl_storage_per_query_processed_blocks`)
 	rowsProcessedPerQuery                    = metrics.NewHistogram(`vl_storage_per_query_processed_rows`)
+	rowsFoundPerQuery                        = metrics.NewHistogram(`vl_storage_per_query_found_rows`)
 	valuesReadPerQuery                       = metrics.NewHistogram(`vl_storage_per_query_read_values`)
 	timestampsReadPerQuery                   = metrics.NewHistogram(`vl_storage_per_query_read_timestamps`)
 	bytesProcessedPerQueryUncompressedValues = metrics.NewHistogram(`vl_storage_per_query_uncompressed_values_processed_bytes`)
@@ -36,6 +37,7 @@ func UpdatePerQueryStatsMetrics(qs *logstorage.QueryStats) {
 
 	blocksProcessedPerQuery.Update(float64(qs.BlocksProcessed))
 	rowsProcessedPerQuery.Update(float64(qs.RowsProcessed))
+	rowsFoundPerQuery.Update(float64(qs.RowsFound))
 	valuesReadPerQuery.Update(float64(qs.ValuesRead))
 	timestampsReadPerQuery.Update(float64(qs.TimestampsRead))
 	bytesProcessedPerQueryUncompressedValues.Update(float64(qs.BytesProcessedUncompressedValues))

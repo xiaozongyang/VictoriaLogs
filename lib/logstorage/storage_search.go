@@ -1144,6 +1144,8 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 						continue
 					}
 
+					rowsProcessed := bsw.bh.rowsCount
+
 					bs.search(qsLocal, bsw, bm)
 					if bs.br.rowsLen > 0 {
 						if so.timeOffset != 0 {
@@ -1154,7 +1156,8 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, qs *QuerySt
 					bsw.reset()
 
 					qsLocal.BlocksProcessed++
-					qsLocal.RowsProcessed += uint64(bs.br.rowsLen)
+					qsLocal.RowsProcessed += rowsProcessed
+					qsLocal.RowsFound += uint64(bs.br.rowsLen)
 				}
 				bswb.bsws = bswb.bsws[:0]
 				putBlockSearchWorkBatch(bswb)

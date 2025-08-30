@@ -2583,8 +2583,9 @@ The `<q> | query_stats` [pipe](#pipes) returns the following execution statistic
 - `BytesReadTotal` - the total number of bytes read from disk.
 - `BlocksProcessed` - the number of data blocks processed during query exectution. Use more narrow [time filter](#time-filter) and [log stream filter](#stream-filter)
   for reducing the number of data blocks processed.
-- `RowsProcessed` - the number of rows processed during query execution. Use more narrow [time filter](#time-filter) and [log stream filter](#stream-filter)
-  for reducing the number of rows processed.
+- `RowsProcessed` - the number of log entries processed during query execution. Use more narrow [time filter](#time-filter) and [log stream filter](#stream-filter)
+  for reducing the number of processed log entries.
+- `RowsFound` - the number of log entries found by the query.
 - `ValuesRead` - the number of [log field values](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) read during query processing.
   Use [`fields` pipe](#fields-pipe) for reducing the number of field values read.
 - `TimestampsRead` - the number of [`_time` fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) read during query processing.
