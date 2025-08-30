@@ -2571,9 +2571,27 @@ See also:
 
 ### query_stats pipe
 
-The `<q> | query_stats` [pipe](#pipes) returns execution statistics for the given [query `<q>`](#query-syntax).
+The `<q> | query_stats` [pipe](#pipes) returns the following execution statistics for the given [query `<q>`](#query-syntax):
 
-This pipe is useful for optimizing slow queries.
+- `bytesReadColumnsHeaders` - the number of bytes read from disk for columns headers. Use [`fields` pipe](#fields-pipe) for reducing the number of bytes read for columns headers.
+- `bytesReadColumnsHeaderIndexes` - the number of bytes read from disk for column header indexes.
+- `bytesReadBloomFilters` - the number of bytes read from disk for bloom filters.
+- `bytesReadValues` - the number of bytes read from disk for [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+   Use [`fields` pipe](#fields-pipe) for reducing the number of bytes read for log field values.
+- `bytesReadTimestamps` - the number of bytes read from disk for [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field).
+- `bytesReadBlockHeaders` - the number of bytes read from disk for block headers.
+- `bytesReadTotal` - the total number of bytes read from disk.
+- `blocksProcessed` - the number of data blocks processed during query exectution. Use more narrow [time filter](#time-filter) and [log stream filter](#stream-filter)
+  for reducing the number of data blocks processed.
+- `rowsProcessed` - the number of rows processed during query execution. Use more narrow [time filter](#time-filter) and [log stream filter](#stream-filter)
+  for reducing the number of rows processed.
+- `valuesRead` - the number of [log field values](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) read during query processing.
+  Use [`fields` pipe](#fields-pipe) for reducing the number of field values read.
+- `timestampsRead` - the number of [`_time` fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field) read during query processing.
+- `bytesProcessedUncompressedValues` - the number of uncompressed bytes for [log field values](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model),
+  which are processed during query exection.
+
+This pipe is useful for investigation and optimizing slow queries.
 
 See also:
 
