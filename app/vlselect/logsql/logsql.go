@@ -2,6 +2,7 @@ package logsql
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"math"
@@ -25,6 +26,11 @@ import (
 
 	"github.com/VictoriaMetrics/VictoriaLogs/app/vlstorage"
 	"github.com/VictoriaMetrics/VictoriaLogs/lib/logstorage"
+)
+
+var (
+	maxQueryTimeRange = flag.Duration("search.maxQueryTimeRange", 0, "The maximum time range, which can be set in the query sent to querying APIs. "+
+		"Queries with bigger time ranges are rejected. See https://docs.victoriametrics.com/victorialogs/querying/#resource-usage-limits")
 )
 
 // ProcessFacetsRequest handles /select/logsql/facets request.
@@ -1186,11 +1192,23 @@ func parseCommonArgs(r *http.Request) (*commonArgs, error) {
 	}
 
 	if minTimestamp == math.MinInt64 || maxTimestamp == math.MaxInt64 {
-		// The original time range is open-bound.
+		// The original time range is open-bounded.
 		// Override it with the (start, end) time range in this case.
 		minTimestamp, maxTimestamp = q.GetFilterTimeRange()
 		if maxTimestamp == math.MaxInt64 {
 			maxTimestamp = timestamp
+		}
+	}
+
+	if *maxQueryTimeRange > 0 {
+		start, end := q.GetFilterTimeRange()
+		if end > start {
+			queryTimeRange := end - start
+			if queryTimeRange < 0 || queryTimeRange > maxQueryTimeRange.Nanoseconds() {
+				return nil, fmt.Errorf("too big time range selected: [%s, %s]; it cannot exceed -search.maxQueryTimeRange=%s; "+
+					"see https://docs.victoriametrics.com/victorialogs/querying/#resource-usage-limits",
+					timestampToString(start), timestampToString(end), *maxQueryTimeRange)
+			}
 		}
 	}
 
@@ -1202,6 +1220,11 @@ func parseCommonArgs(r *http.Request) (*commonArgs, error) {
 		maxTimestamp: maxTimestamp,
 	}
 	return ca, nil
+}
+
+func timestampToString(nsecs int64) string {
+	t := time.Unix(nsecs/1e9, nsecs%1e9).UTC()
+	return t.Format(time.RFC3339Nano)
 }
 
 func getTimeNsec(r *http.Request, argName string) (int64, string, error) {

@@ -32,6 +32,11 @@ VictoriaLogs provides the following HTTP endpoints:
 - [`/select/logsql/field_names`](#querying-field-names) for querying [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) names.
 - [`/select/logsql/field_values`](#querying-field-values) for querying [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) values.
 
+See also:
+
+- [Extra filters](#extra-filters)
+- [Resource usage limits](#resource-usage-limits)
+
 ### Querying logs
 
 Logs stored in VictoriaLogs can be queried at the `/select/logsql/query` HTTP endpoint.
@@ -978,6 +983,21 @@ The `extra_filters` and `extra_stream_filters` values can have the following for
 The `extra_filters` may contain also arbitrary [LogsQL filter](https://docs.victoriametrics.com/victorialogs/logsql/#filters). For example, `extra_filters=foo:~bar%20-baz:x`.
 
 The arg passed to `extra_filters` and `extra_stream_filters` must be properly encoded with [percent encoding](https://en.wikipedia.org/wiki/Percent-encoding).
+
+## Resource usage limits
+
+VictoriaLogs provides the following options to limit resource usage by the executed queries:
+
+- `-search.maxQueryTimeRange` command-line flag disallows queries without [time filters](https://docs.victoriametrics.com/victorialogs/logsql/#time-filter) and queries
+  with too broad time filters, which select time ranges bigger than the value passed to `-search.maxQueryTimeRange`. For example, `-search.maxQueryTimeRange=1d` disallows queries,
+  which select logs on time ranges bigger than one day.
+
+- `-search.maxQueryDuration` command-line flag limits the maximum execution time for a single query. For example, `-search.maxQueryDuration=10s` limits the maximum
+  query execution time to 10 seconds. The maximum query duration can be set to lower values via `timeout` query arg, which can be passed to all the [HTTP querying APIs](#http-api).
+
+- `-search.maxConcurrentRequests` command-line flag limits the number of concurrently executed queries. It isn't recommended setting it to too big values,
+  since this usually results in the increased RAM usage and slowdown for the concurrently executed queries. VictoriaLogs waits for up to `-search.maxQueueDuration`
+  before returning errors to queries, which cannot be executed because `-search.maxConcurrentRequests` limit is reached.
 
 ## Web UI
 
