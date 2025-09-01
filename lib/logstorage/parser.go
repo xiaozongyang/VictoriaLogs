@@ -957,6 +957,18 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 	}
 	ps := pipes[idx].(*pipeStats)
 
+	// verify that pipes in front of the last `pipe` do not modify or delete `_time` field
+	for i := 0; i < idx; i++ {
+		p := pipes[i]
+		if _, ok := p.(*pipeStats); ok {
+			// Skip `stats` pipe, since it is updated with the grouping by `_time` in the addByTimeFieldToStatsPipes() below.
+			continue
+		}
+		if !p.canReturnLastNResults() {
+			return nil, fmt.Errorf("the pipe `| %q` cannot be put in front of `| %q`, since it modifies or deletes `_time` field", p, ps)
+		}
+	}
+
 	// add _time:step to by (...) list at stats pipes.
 	q.addByTimeFieldToStatsPipes(step)
 

@@ -1856,9 +1856,9 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`* | stats by (x, y) count(*) foo, count_uniq(a,b) bar`, `* | stats by (x, y) count(*) as foo, count_uniq(a, b) as bar`)
 
 	// stats pipe with grouping buckets
-	f(`* | stats by(_time:1d, response_size:1_000KiB, request_duration:5s, foo) count() as bar`, `* | stats by (_time:1d, response_size:1_000KiB, request_duration:5s, foo) count(*) as bar`)
+	f(`* | stats by(_time : 1d, response_size:1_000KiB, request_duration:5s, foo) count() as bar`, `* | stats by (_time:1d, response_size:1_000KiB, request_duration:5s, foo) count(*) as bar`)
 	f(`*|stats by(client_ip:/24, server_ip:/16) count() foo`, `* | stats by (client_ip:/24, server_ip:/16) count(*) as foo`)
-	f(`* | stats by(_time:1d offset 2h) count() as foo`, `* | stats by (_time:1d offset 2h) count(*) as foo`)
+	f(`* | stats by(_time: 1d offset 2h) count() as foo`, `* | stats by (_time:1d offset 2h) count(*) as foo`)
 	f(`* | stats by(_time:1d offset -2.5h5m) count() as foo`, `* | stats by (_time:1d offset -2.5h5m) count(*) as foo`)
 	f(`* | stats by (_time:nanosecond) count() foo`, `* | stats by (_time:nanosecond) count(*) as foo`)
 	f(`* | stats by (_time:microsecond) count() foo`, `* | stats by (_time:microsecond) count(*) as foo`)
@@ -3425,6 +3425,32 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Success(t *testing.T) {
 
 	// multiple stats pipes and sort pipes
 	f(`* | by (path) count() requests | by (requests) count() hits | first (hits desc)`, nsecsPerDay, []string{"requests", "_time"}, `* | stats by (path, _time:86400000000000) count(*) as requests | stats by (requests, _time:86400000000000) count(*) as hits | first by (hits desc) partition by (_time)`)
+
+	// pipes, which do not drop or modify _time, are allowed in front of `stats` pipe
+	f("* | collapse_nums | count() x", nsecsPerDay, []string{"_time"}, `* | collapse_nums | stats by (_time:86400000000000) count(*) as x`)
+	f("* | copy foo bar | count() x", nsecsPerDay, []string{"_time"}, `* | copy foo as bar | stats by (_time:86400000000000) count(*) as x`)
+	f("*|decolorize|count()x", nsecsPerDay, []string{"_time"}, `* | decolorize | stats by (_time:86400000000000) count(*) as x`)
+	f("* | delete foo, bar | count() x", nsecsPerDay, []string{"_time"}, `* | delete foo, bar | stats by (_time:86400000000000) count(*) as x`)
+	f("* | drop_empty_fields | count() x", nsecsPerDay, []string{"_time"}, `* | drop_empty_fields | stats by (_time:86400000000000) count(*) as x`)
+	f("* | extract '<foo>bar<baz>' | count() x", nsecsPerDay, []string{"_time"}, `* | extract "<foo>bar<baz>" | stats by (_time:86400000000000) count(*) as x`)
+	f("* | extract_regexp 'foo(?P<bar>baz)' | count() x", nsecsPerDay, []string{"_time"}, `* | extract_regexp "foo(?P<bar>baz)" | stats by (_time:86400000000000) count(*) as x`)
+	f("* | fields _time, x | count() x", nsecsPerDay, []string{"_time"}, `* | fields _time, x | stats by (_time:86400000000000) count(*) as x`)
+	f("* | filter x:y | count() x", nsecsPerDay, []string{"_time"}, `x:y | stats by (_time:86400000000000) count(*) as x`)
+	f("* | format 'x<y>' | count()x", nsecsPerDay, []string{"_time"}, `* | format "x<y>" | stats by (_time:86400000000000) count(*) as x`)
+	f("* | hash(x) | count() x", nsecsPerDay, []string{"_time"}, `* | hash(x) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | json_array_len (x) | count() x", nsecsPerDay, []string{"_time"}, `* | json_array_len(x) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | len(x) | count() x", nsecsPerDay, []string{"_time"}, `* | len(x) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | math x+y as z | count() x", nsecsPerDay, []string{"_time"}, `* | math (x + y) as z | stats by (_time:86400000000000) count(*) as x`)
+	f("* | pack_json | count() x", nsecsPerDay, []string{"_time"}, `* | pack_json | stats by (_time:86400000000000) count(*) as x`)
+	f("* | pack_logfmt | count() x", nsecsPerDay, []string{"_time"}, `* | pack_logfmt | stats by (_time:86400000000000) count(*) as x`)
+	f("* | rename foo bar | count() x", nsecsPerDay, []string{"_time"}, `* | rename foo as bar | stats by (_time:86400000000000) count(*) as x`)
+	f("* | replace ('foo', 'bar') | count() x", nsecsPerDay, []string{"_time"}, `* | replace (foo, bar) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | replace_regexp ('foo', 'bar') | count() x", nsecsPerDay, []string{"_time"}, `* | replace_regexp (foo, bar) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | time_add 1h | count() x", nsecsPerDay, []string{"_time"}, `* | time_add 1h | stats by (_time:86400000000000) count(*) as x`)
+	f("* | unpack_json x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_json from x | stats by (_time:86400000000000) count(*) as x`)
+	f("* | unpack_logfmt x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_logfmt from x | stats by (_time:86400000000000) count(*) as x`)
+	f("* | unpack_syslog x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_syslog from x | stats by (_time:86400000000000) count(*) as x`)
+	f("* | unpack_words x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_words from x | stats by (_time:86400000000000) count(*) as x`)
 }
 
 func TestQueryGetStatsByFieldsAddGroupingByTime_Failure(t *testing.T) {
@@ -3456,6 +3482,34 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Failure(t *testing.T) {
 	// offset and limit pipes are disallowed, since they cannot be applied individually per each step
 	f(`* | by (x) count() | offset 10`)
 	f(`* | by (x) count() | limit 20`)
+
+	// pipes, which drop or modify _time field are disallowed in front of `stats` pipe
+	f("* | blocks_count | count()")
+	f("* | block_stats | count()")
+	f("* | facets | count()")
+	f("* | field_names | count()")
+	f("* | fields foo, bar | count()")
+	f("* | field_values x | count()")
+	f("* | first 10 (x) | count()")
+	f("* | format 'x<y>' as _time | count()")
+	f("* | generate_sequence 10 | count()")
+	f("* | hash(x) as _time | count()")
+	f("* | join by (x) (foo) | count()")
+	f("* | json_array_len (x) as _time | count()")
+	f("* | last 10 (x) | count()")
+	f("* | len(x) as _time | count()")
+	f("* | limit 10 | count()")
+	f("* | offset 10 | count()")
+	f("* | pack_json as _time | count()")
+	f("* | pack_logfmt as _time | count()")
+	f("* | query_stats | count()")
+	f("* | sample 10 | count()")
+	f("* | sort by (x) | count()")
+	f("* | stream_context before 10 after 20 | count()")
+	f("* | top 5 by (x) | count()")
+	f("* | union (x) | count()")
+	f("* | uniq (x) | count()")
+	f("* | unroll by (x) | count()")
 }
 
 func TestQueryGetStatsByFields_Success(t *testing.T) {
@@ -3540,10 +3594,6 @@ func TestQueryGetStatsByFields_Success(t *testing.T) {
 	// check first and last pipes
 	f(`foo | stats by (x) count() y | first by (y)`, []string{"x"})
 	f(`foo | stats by (x) count() y | last by (y)`, []string{"x"})
-
-	// generate_sequence
-	f(`* | generate_sequence 123 | math (_msg * 1d) as _time | stats count() x`, []string{})
-	f(`* | generate_sequence 123 | math (_msg * 1d) as _time, (_msg % 3) as x | stats by (x) count() y`, []string{"x"})
 }
 
 func TestQueryGetStatsByFields_Failure(t *testing.T) {
