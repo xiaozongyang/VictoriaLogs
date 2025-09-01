@@ -112,7 +112,7 @@ func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 	}
 	lex.nextToken()
 
-	reStr, err := getCompoundToken(lex)
+	reStr, err := lex.nextCompoundToken()
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse reStr in 'replace_regexp': %w", err)
 	}
@@ -125,7 +125,7 @@ func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 	}
 	lex.nextToken()
 
-	replacement, err := getCompoundToken(lex)
+	replacement, err := lex.nextCompoundToken()
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse replacement in 'replace_regexp(%q': %w", reStr, err)
 	}

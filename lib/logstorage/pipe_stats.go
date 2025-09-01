@@ -1452,7 +1452,7 @@ func parseByStatsFields(lex *lexer) ([]*byStatsField, error) {
 			lex.nextToken()
 			return bfs, nil
 		}
-		fieldName, err := getCompoundPhrase(lex, false)
+		fieldName, err := lex.nextCompoundTokenExt([]string{":"})
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse field name: %w", err)
 		}
@@ -1610,7 +1610,7 @@ func parseFieldFiltersInParens(lex *lexer) ([]string, error) {
 		}
 		field, err := parseFieldFilter(lex)
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse field name: %w", err)
+			return nil, err
 		}
 		fields = append(fields, field)
 		switch {
@@ -1625,22 +1625,30 @@ func parseFieldFiltersInParens(lex *lexer) ([]string, error) {
 }
 
 func parseFieldName(lex *lexer) (string, error) {
-	fieldName, err := parseFieldFilter(lex)
+	fieldName, err := lex.nextCompoundToken()
 	if err != nil {
 		return "", err
 	}
-	if prefixfilter.IsWildcardFilter(fieldName) {
-		return "", fmt.Errorf("field name cannot end with '*'; got %q", fieldName)
-	}
+	fieldName = getCanonicalColumnName(fieldName)
 	return fieldName, nil
 }
 
 func parseFieldFilter(lex *lexer) (string, error) {
-	fieldName, err := getCompoundToken(lex)
+	if lex.isKeyword("*") {
+		lex.nextToken()
+		return "*", nil
+	}
+
+	fieldName, err := lex.nextCompoundToken()
 	if err != nil {
-		return "", fmt.Errorf("cannot parse field name: %w", err)
+		return "", err
 	}
 	fieldName = getCanonicalColumnName(fieldName)
+	if !lex.isSkippedSpace && lex.isKeyword("*") {
+		lex.nextToken()
+		fieldName += "*"
+	}
+
 	return fieldName, nil
 }
 

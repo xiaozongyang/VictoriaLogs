@@ -756,7 +756,7 @@ func TestParseFilterSequence(t *testing.T) {
 	f(`seq()`, `_msg`, nil)
 	f(`foo:seq(foo)`, `foo`, []string{"foo"})
 	f(`_msg:seq("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
-	f(`seq(foo,bar-baz.aa"bb","c,)d")`, `_msg`, []string{"foo", `bar-baz.aa"bb"`, "c,)d"})
+	f(`seq(foo,bar-baz.aa/bb+,"c,)d")`, `_msg`, []string{"foo", `bar-baz.aa/bb+`, "c,)d"})
 }
 
 func TestParseFilterIn(t *testing.T) {
@@ -780,9 +780,9 @@ func TestParseFilterIn(t *testing.T) {
 
 	f(`in()`, `_msg`, nil)
 	f(`foo:in(foo)`, `foo`, []string{"foo"})
-	f(`:in("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
+	f(`in("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
 	f(`ip:in(1.2.3.4, 5.6.7.8, 9.10.11.12)`, `ip`, []string{"1.2.3.4", "5.6.7.8", "9.10.11.12"})
-	f(`foo-bar:in(foo,bar-baz.aa"bb","c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa"bb"`, "c,)d"})
+	f(`foo-bar:in(foo,bar-baz.aa,"bb","c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa`, `bb`, "c,)d"})
 
 	// verify `in(query)` - it shouldn't set values
 	f(`in(x|fields foo)`, `_msg`, nil)
@@ -823,9 +823,9 @@ func TestParseFilterContainsAll(t *testing.T) {
 
 	f(`contains_all()`, `_msg`, nil)
 	f(`foo:contains_all(foo)`, `foo`, []string{"foo"})
-	f(`:contains_all("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
+	f(`contains_all("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
 	f(`ip:contains_all(1.2.3.4, 5.6.7.8, 9.10.11.12)`, `ip`, []string{"1.2.3.4", "5.6.7.8", "9.10.11.12"})
-	f(`foo-bar:contains_all(foo,bar-baz.aa"bb","c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa"bb"`, "c,)d"})
+	f(`foo-bar:contains_all(foo,bar-baz.aa,"bb","c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa`, `bb`, "c,)d"})
 
 	// verify `contains_all(query)` - it shouldn't set values
 	f(`contains_all(x|fields foo)`, `_msg`, nil)
@@ -853,9 +853,9 @@ func TestParseFilterContainsAny(t *testing.T) {
 
 	f(`contains_any()`, `_msg`, nil)
 	f(`foo:contains_any(foo)`, `foo`, []string{"foo"})
-	f(`:contains_any("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
+	f(`contains_any("foo bar,baz")`, `_msg`, []string{"foo bar,baz"})
 	f(`ip:contains_any(1.2.3.4, 5.6.7.8, 9.10.11.12)`, `ip`, []string{"1.2.3.4", "5.6.7.8", "9.10.11.12"})
-	f(`foo-bar:contains_any(foo,bar-baz.aa"bb","c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa"bb"`, "c,)d"})
+	f(`foo-bar:contains_any(foo,bar-baz.aa,'"bb"',"c,)d")`, `foo-bar`, []string{"foo", `bar-baz.aa`, `"bb"`, "c,)d"})
 
 	// verify `contains_any(query)` - it shouldn't set values
 	f(`contains_any(x|fields foo)`, `_msg`, nil)
@@ -887,7 +887,7 @@ func TestParseFilterIPv4Range(t *testing.T) {
 	f(`ipv4_range(1.2.3.4, 5.6.7.8)`, `_msg`, 0x01020304, 0x05060708)
 	f(`_msg:ipv4_range("0.0.0.0", 255.255.255.255)`, `_msg`, 0, 0xffffffff)
 	f(`ip:ipv4_range(1.2.3.0/24)`, `ip`, 0x01020300, 0x010203ff)
-	f(`:ipv4_range("1.2.3.34/24")`, `_msg`, 0x01020300, 0x010203ff)
+	f(`ipv4_range("1.2.3.34/24")`, `_msg`, 0x01020300, 0x010203ff)
 	f(`ipv4_range("1.2.3.34/20")`, `_msg`, 0x01020000, 0x01020fff)
 	f(`ipv4_range("1.2.3.15/32")`, `_msg`, 0x0102030f, 0x0102030f)
 	f(`ipv4_range(1.2.3.34/0)`, `_msg`, 0, 0xffffffff)
@@ -944,7 +944,7 @@ func TestParseFilterValueType(t *testing.T) {
 
 	f("value_type(foo)", "_msg", "foo")
 	f("foo:value_type('dict')", "foo", "dict")
-	f("value_type:value_type('')", "value_type", "")
+	f("'value_type':value_type('')", "value_type", "")
 	f(`z:value_type("string")`, "z", "string")
 }
 
@@ -1043,8 +1043,8 @@ func TestParseFilterPhrase(t *testing.T) {
 
 	f(`""`, `_msg`, ``)
 	f(`foo`, `_msg`, `foo`)
-	f(`abc-de.fg:foo-bar+baz`, `abc-de.fg`, `foo-bar+baz`)
-	f(`"abc-de.fg":"foo-bar+baz"`, `abc-de.fg`, `foo-bar+baz`)
+	f(`abc-de.fg:foo-bar/baz`, `abc-de.fg`, `foo-bar/baz`)
+	f(`"abc-de.fg":"foo-bar/baz"`, `abc-de.fg`, `foo-bar/baz`)
 	f(`"abc-de.fg":"foo-bar*baz *"`, `abc-de.fg`, `foo-bar*baz *`)
 	f(`"foo:bar*,( baz"`, `_msg`, `foo:bar*,( baz`)
 }
@@ -1080,8 +1080,8 @@ func TestParseFilterPrefix(t *testing.T) {
 	f(`f:*`, `f`, ``)
 	f(`""*`, ``, ``)
 	f(`foo*`, `_msg`, `foo`)
-	f(`abc-de.fg:foo-bar+baz*`, `abc-de.fg`, `foo-bar+baz`)
-	f(`"abc-de.fg":"foo-bar+baz"*`, `abc-de.fg`, `foo-bar+baz`)
+	f(`abc-de.fg:foo-bar/baz*`, `abc-de.fg`, `foo-bar/baz`)
+	f(`"abc-de.fg":"foo-bar/baz"*`, `abc-de.fg`, `foo-bar/baz`)
 	f(`"abc-de.fg":"foo-bar*baz *"*`, `abc-de.fg`, `foo-bar*baz *`)
 }
 
@@ -1109,10 +1109,10 @@ func TestParseRangeFilter(t *testing.T) {
 
 	f(`range[-1.234, +2e5]`, `_msg`, -1.234, 2e5)
 	f(`foo:range[-1.234e-5, 2e5]`, `foo`, -1.234e-5, 2e5)
-	f(`range:range["-1.234e5", "-2e-5"]`, `range`, -1.234e5, -2e-5)
+	f(`'range':range["-1.234e5", "-2e-5"]`, `range`, -1.234e5, -2e-5)
 
 	f(`_msg:range[1, 2]`, `_msg`, 1, 2)
-	f(`:range(1, 2)`, `_msg`, nextafter(1, inf), nextafter(2, -inf))
+	f(`range(1, 2)`, `_msg`, nextafter(1, inf), nextafter(2, -inf))
 	f(`range[1, 2)`, `_msg`, 1, nextafter(2, -inf))
 	f(`range("1", 2]`, `_msg`, nextafter(1, inf), 2)
 
@@ -1165,8 +1165,18 @@ func TestParseQuery_Success(t *testing.T) {
 	}
 
 	f("foo", "foo")
-	f(":foo", "foo")
 	f(`"":foo`, "foo")
+	f(`foo  :  bar`, `foo:bar`)
+	f(`foo::bar`, `foo:":bar"`)
+	f(`foo :  :bar`, `foo:":bar"`)
+	f(`foo:(:bar)`, `foo:":bar"`)
+	f(`foo : ( :bar )`, `foo:":bar"`)
+	f(`foo:::: bar`, `foo:":::" bar`)
+	f(`1 = 2`, `1 =2`)
+	f(`1 - 2`, `1 !2`)
+	f(`1 ~ 2`, `1 ~2`)
+	f(`1* 2`, `1* 2`)
+	f(`1 * 2`, `1 2`)
 	f(`"" bar`, `"" bar`)
 	f(`!''`, `!""`)
 	f(`-''`, `!""`)
@@ -1217,7 +1227,7 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`"filter" bar copy fields avg baz`, `"filter" bar "copy" "fields" "avg" baz`)
 
 	// parens
-	f(`foo:(bar baz or not :xxx)`, `foo:bar foo:baz or !foo:xxx`)
+	f(`foo:(bar baz or not :xxx)`, `foo:bar foo:baz or !foo:":xxx"`)
 	f(`(foo:bar and (foo:baz or aa:bb) and xx) and y`, `foo:bar (foo:baz or aa:bb) xx y`)
 	f("level:error and _msg:(a or b)", "level:error (a or b)")
 	f("level: ( ((error or warn*) and re(foo))) (not (bar))", `(level:error or level:warn*) level:~foo !bar`)
@@ -1237,6 +1247,11 @@ func TestParseQuery_Success(t *testing.T) {
 	// This isn't a prefix search - it equals to `foo AND *`
 	f(`foo *`, `foo`)
 	f(`"foo" *`, `foo`)
+
+	// substring search
+	f(`*foo*`, `*foo*`)
+	f(`foo:*bar*`, `foo:*bar*`)
+	f(`foo: *"bar*:baz"*`, `foo:*"bar*:baz"*`)
 
 	// empty filter
 	f(`"" or foo:"" and not bar:""`, `"" or foo:"" !bar:""`)
@@ -1345,7 +1360,7 @@ func TestParseQuery_Success(t *testing.T) {
 	f("and and or", `"and" "or"`)
 	f("AnD", `"AnD"`)
 	f("or", `"or"`)
-	f("re 'and' `or` 'not'", `"re" "and" "or" "not"`)
+	f("`re` 'and' `or` 'not'", `"re" "and" "or" "not"`)
 	f("foo:and", `foo:"and"`)
 	f("'re':or or x", `"re":"or" or x`)
 	f(`"-"`, `"-"`)
@@ -1414,6 +1429,12 @@ func TestParseQuery_Success(t *testing.T) {
 	f("'options'", `"options"`)
 	f(`"options" foo`, `"options" foo`)
 	f("`options(x)`", `"options(x)"`)
+	f(`_stream_id`, `_stream_id`)
+	f(`x:_stream_id`, `x:_stream_id`)
+	f(`_stream`, `_stream`)
+	f(`x:_stream`, `x:_stream`)
+	f(`_time`, `_time`)
+	f(`x:_time`, `x:_time`)
 
 	// eq_field filter
 	f("eq_field(foo)", "eq_field(foo)")
@@ -1449,8 +1470,8 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`exact("foo/bar")`, `="foo/bar"`)
 	f(`exact('foo/bar')`, `="foo/bar"`)
 	f(`="foo/bar"`, `="foo/bar"`)
-	f("=foo=bar !=b<=a>z foo:!='abc'*", `="foo=bar" !="b<=a>z" !foo:=abc*`)
-	f("==foo =>=bar x : ( = =a<b*='c*' >=20)", `="=foo" =">=bar" x:="=a<b"* x:="c*" x:>=20`)
+	f(`="foo=bar" !="b<=a>z" foo:!='abc'*`, `="foo=bar" !="b<=a>z" !foo:=abc*`)
+	f(`="=foo" =">=bar" x : ( = "=a<b"* ='c*' >=20)`, `="=foo" =">=bar" x:="=a<b"* x:="c*" x:>=20`)
 
 	// i filter
 	f("i(foo)", `i(foo)`)
@@ -1561,7 +1582,7 @@ func TestParseQuery_Success(t *testing.T) {
 	f("re(foo)", `~foo`)
 	f(`foo:re(foo-bar/baz.)`, `foo:~"foo-bar/baz."`)
 	f(`~foo.bar.baz !~bar`, `~foo.bar.baz !~bar`)
-	f(`foo:~~foo~ba/ba>z`, `foo:~"~foo~ba/ba>z"`)
+	f(`foo:~"~foo~ba/ba>z"`, `foo:~"~foo~ba/ba>z"`)
 	f(`foo:~'.*'`, `*`)
 	f(`foo:~'.+'`, `foo:*`)
 	f(`~".*"`, `*`)
@@ -1569,16 +1590,17 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`foo bar:~".*"`, `foo`)
 	f(`foo bar:~""`, `foo`)
 	f(`foo bar:~".+"`, `foo bar:*`)
-	f(`x:~.*`, `*`)
-	f(`~.*`, `*`)
-	f(`x:~a*`, `x:~"a*"`)
-	f(`~a*`, `~"a*"`)
+	f(`~"a\\b"`, `~"a\\b"`)
+	f(`x:~".*"`, `*`)
+	f(`~".*"`, `*`)
+	f(`x:~"a*"`, `x:~"a*"`)
+	f(`~'a*'`, `~"a*"`)
 
 	// seq filter
 	f(`seq()`, `seq()`)
 	f(`seq(foo)`, `seq(foo)`)
 	f(`seq("foo, bar", baz, abc)`, `seq("foo, bar",baz,abc)`)
-	f(`foo:seq(foo"bar-baz+aa, b)`, `foo:seq("foo\"bar-baz+aa",b)`)
+	f(`foo:seq(foo,bar-baz+aa, b)`, `foo:seq(foo,"bar-baz+aa",b)`)
 
 	// string_range filter
 	f(`string_range(foo, bar)`, `string_range(foo, bar)`)
@@ -1597,7 +1619,7 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`_stream and _time or _msg`, `_stream _time or _msg`)
 
 	// invalid rune
-	f("\xff", `"\xff"`)
+	f(`"\xff"`, `"\xff"`)
 
 	// ip addresses in the query
 	f("1.2.3.4 or ip:5.6.7.9", "1.2.3.4 or ip:5.6.7.9")
@@ -1608,14 +1630,14 @@ func TestParseQuery_Success(t *testing.T) {
 	f("foo-bar+baz*", `"foo-bar+baz"*`)
 	f("foo- bar", `"foo-" bar`)
 	f("foo -bar", `foo !bar`)
-	f("foo!bar", `"foo!bar"`)
-	f("foo:aa!bb:cc", `foo:"aa!bb:cc"`)
+	f("`foo!bar`", `"foo!bar"`)
+	f("foo:`aa!bb:cc`", `foo:"aa!bb:cc"`)
 	f(`foo:bar:baz`, `foo:"bar:baz"`)
 	f(`foo:(bar baz:xxx)`, `foo:bar foo:"baz:xxx"`)
 	f(`foo:(_time:abc or not z)`, `foo:"_time:abc" or !foo:z`)
-	f(`foo:(_msg:a :x _stream:{c="d"})`, `foo:"_msg:a" foo:x foo:"_stream:{c=\"d\"}"`)
-	f(`:(_msg:a:b c)`, `"a:b" c`)
-	f(`"foo"bar baz:"a'b"c`, `"\"foo\"bar" baz:"\"a'b\"c"`)
+	f(`foo:(_msg:a :x '_stream:{c="d"}')`, `foo:"_msg:a" foo:":x" foo:"_stream:{c=\"d\"}"`)
+	f(`(_msg:a:b c)`, `"a:b" c`)
+	f(`'"foo"bar' baz:"a'b'c"`, `"\"foo\"bar" baz:"a'b'c"`)
 
 	// complex queries
 	f(`_time:[-1h, now] _stream:{job="foo",env=~"prod|staging"} level:(error or warn*) and not "connection reset by peer"`,
@@ -1918,8 +1940,7 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`* | extract "foo<bar>baz" from _msg`, `* | extract "foo<bar>baz"`)
 	f(`* | extract 'foo<bar>baz' from ''`, `* | extract "foo<bar>baz"`)
 	f("* | extract `foo<bar>baz` from x", `* | extract "foo<bar>baz" from x`)
-	f("* | extract foo<bar>baz from x", `* | extract "foo<bar>baz" from x`)
-	f("* | extract if (a:b) foo<bar>baz from x", `* | extract if (a:b) "foo<bar>baz" from x`)
+	f("* | extract if (a:b) 'foo<bar>baz' from x", `* | extract if (a:b) "foo<bar>baz" from x`)
 
 	// union pipe
 	f(`* | union(foo)`, `* | union (foo)`)
@@ -1996,6 +2017,28 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`* | join (x) ({foo=bar} {baz=x}) | count() if (a:in((a b) c (d e) | keep a)) z`, `* | join by (x) ({foo="bar",baz="x"}) | stats count(*) if (a:in(a b c d e | fields a)) as z`)
 	f(`* | join (x) ({foo=bar} {baz=x}) | count() if (a:contains_any((a b) c (d e) | keep a)) z`, `* | join by (x) ({foo="bar",baz="x"}) | stats count(*) if (a:contains_any(a b c d e | fields a)) as z`)
 	f(`* | join (x) ({foo=bar} {baz=x}) | count() if (a:contains_all((a b) c (d e) | keep a)) z`, `* | join by (x) ({foo="bar",baz="x"}) | stats count(*) if (a:contains_all(a b c d e | fields a)) as z`)
+
+	// edge cases from https://github.com/VictoriaMetrics/VictoriaLogs/issues/590
+	f(`(a)or(b)`, `a or b`)
+	f(`_time:[5m, 10m]OR not(x)`, `_time:[5m,10m] or !x`)
+	f(`(a)and(b)`, `a b`)
+	f(`_time:[5m, 10m]ANd not(x)`, `_time:[5m,10m] !x`)
+	f(`*|(foo)`, `foo`)
+	f(`a:(foo)`, `a:foo`)
+	f(`((a))`, `a`)
+	f(`!(a)`, `!a`)
+	f(`-(a)`, `!a`)
+	f(`not(a)`, `!a`)
+	f(`a and(b)`, `a b`)
+	f(`a or(b)`, `a or b`)
+	f(`a|foobar`, `a foobar`)
+	f(`a|~b`, `a ~b`)
+	f(`a:~b`, `a:~b`)
+	f(`(~a)`, `~a`)
+	f(`!~a`, `!~a`)
+	f(`-~a`, `!~a`)
+	f(`foo-bar.baz/x+z$`, `"foo-bar.baz/x+z$"`)
+	f(`foo:bar:baz:x-z`, `foo:"bar:baz:x-z"`)
 }
 
 func TestParseQuery_Failure(t *testing.T) {
@@ -2025,6 +2068,57 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`*:foo`)
 	f(`foo*:bar`)
 
+	// missing field name
+	f(":foo")
+	f("::foo")
+
+	// superflouos colon
+	f(`foo:: : bar`)
+
+	// unquoted word/phrase filters
+	// See https://github.com/VictoriaMetrics/VictoriaLogs/issues/590
+	f(`foo=bar`)
+	f(`==foo`)
+	f(`foo==bar`)
+	f(`foo!=bar`)
+	f(`foo!~bar`)
+	f(`foo~=bar`)
+	f(`foo~!bar`)
+	f(`foo=~bar`)
+	f(`foo~:bar`)
+	f(`foo>bar`)
+	f(`foo>=bar`)
+	f(`foo<bar`)
+	f(`foo<=bar`)
+	f(`foo,bar`)
+	f(`foo:1*1`)
+	f(`1*1`)
+	f(`foo:~=bar`)
+	f(`foo:~-bar`)
+	f(`foo:~!bar`)
+	f(`foo!b`)
+	f(`foo;bar`)
+	f(`foo(bar)`)
+	f(`>(bar)`)
+	f(`~(bar)`)
+	f(`foo~bar`)
+	f(`foo"bar"baz`)
+
+	// Unexpected chars in filters
+	f(`1 + 1`)
+	f(`1 / 2`)
+	f(`1>2`)
+	f(`1<2`)
+	f(`1 *2`)
+	f(`1*2`)
+	f(`1 == 2`)
+	f(`1 ~~ 2`)
+
+	// Invalid substring filters
+	f(`*foo *`)
+	f(`foo *bar`)
+	f(`*foo;bar*`)
+
 	// pipe names without quotes
 	f(`filter foo:bar`)
 	f(`stats count()`)
@@ -2049,6 +2143,7 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`{"foo=bar}`)
 
 	// invalid _stream_id filters
+	f("_stream_id:")
 	f("_stream_id:foo")
 	f("_stream_id:()")
 	f("_stream_id:in(foo)")

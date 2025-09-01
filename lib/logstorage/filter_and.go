@@ -149,6 +149,9 @@ func getCommonTokensForAndFilters(filters []filter) []fieldTokens {
 		case *filterPrefix:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
+		case *filterSubstring:
+			tokens := t.getTokens()
+			mergeFieldTokens(t.fieldName, tokens)
 		case *filterRegexp:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)

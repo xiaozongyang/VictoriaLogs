@@ -578,6 +578,7 @@ See also:
 - [Phrase filter](#phrase-filter)
 - [Exact filter](#exact-filter)
 - [Prefix filter](#prefix-filter)
+- [Substring filter](#substring-filter)
 - [Logical filter](#logical-filter)
 
 ### Phrase filter
@@ -640,6 +641,7 @@ See also:
 - [Exact filter](#exact-filter)
 - [Word filter](#word-filter)
 - [Prefix filter](#prefix-filter)
+- [Substring filter](#substring-filter)
 - [Logical filter](#logical-filter)
 
 ### Prefix filter
@@ -711,6 +713,7 @@ Performance tips:
 
 See also:
 
+- [Substring filter](#substring-filter)
 - [Exact prefix filter](#exact-prefix-filter)
 - [Word filter](#word-filter)
 - [Phrase filter](#phrase-filter)
@@ -719,11 +722,11 @@ See also:
 
 ### Substring filter
 
-If it is needed to find logs with some substring, then `~"substring"` filter can be used. The substring can be but in quotes according to [these docs](#string-literals).
+If it is needed to find logs with some substring, then `*"substring"*` filter can be used. The substring can be but in quotes according to [these docs](#string-literals).
 For example, the following query matches log entries, which contain `ampl` text in the [`_msg` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field):
 
 ```logsql
-~"ampl"
+*"ampl"*
 ```
 
 It matches the following messages:
@@ -731,11 +734,8 @@ It matches the following messages:
 - `Example message`
 - `This is a sample`
 
-It doesn't match `EXAMPLE message`, since `AMPL` substring here is in uppercase. Use `~"(?i)ampl"` filter instead. Note that case-insensitive filter
+It doesn't match `EXAMPLE message`, since `AMPL` substring here is in uppercase. Use [`~"(?i)ampl"` filter](#regexp-filter) instead. Note that case-insensitive filter
 may be much slower than case-sensitive one.
-
-Note that the substring filter in reality is just a [regexp filter](#regexp-filter), so special regexp chars must be escaped there. For example,
-if you need to search for `foo.bar` substring, then `~"foo\\.bar"` filter must be used, since the `.` char means `any character` in the regexp filter.
 
 Performance tip: prefer using [word filter](#word-filter) and [phrase filter](#phrase-filter), since substring filter may be quite slow.
 
@@ -1138,8 +1138,16 @@ If the regexp contains double quotes, then either put `\` in front of double quo
 logs matching `"foo":"(bar|baz)"` regexp:
 
 ```logsql
-'"foo":"(bar|baz)"'
+~'"foo":"(bar|baz)"'
 ```
+
+The `\` char inside the regexp must be encoded as `\\`. For example, the following query searches for logs with `a.b` substring inside them:
+
+```logsql
+~"a\\.b"
+```
+
+It is recommended using [substring filter](#substring-filter) when searching for some substring is needed.
 
 By default the regexp filter is applied to the [`_msg` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field).
 Specify the needed [field name](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) in front of the filter

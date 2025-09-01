@@ -18,6 +18,8 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): return errors on typical incorrectly written queries. For example, `foo=~"bar"`, `foo~="bar"`, `foo=bar`, `foo!=bar`, `foo>bar`, `foo==bar`, etc. See [#590](https://github.com/VictoriaMetrics/VictoriaLogs/issues/590).
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [substring filter](https://docs.victoriametrics.com/victorialogs/logsql/#substring-filter), which searches for logs containing the given substring. Previously the [regexp filter](https://docs.victoriametrics.com/victorialogs/logsql/#regexp-filter) was used instead of substring filter. The downside of the regexp filter is that it needs proper escaping of special regexp chars.
 * FEATURE: [querying](https://docs.victoriametrics.com/victorialogs/querying/): expose `vl_storage_per_query_found_rows` [histogram](https://docs.victoriametrics.com/keyconcepts/#histogram) at [`/metrics`](https://docs.victoriametrics.com/victorialogs/#monitoring) page, which shows the number of log entries found per each query.
 
 ## [v1.31.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.31.0)

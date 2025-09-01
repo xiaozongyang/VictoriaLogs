@@ -274,7 +274,7 @@ func parsePipeExtractRegexp(lex *lexer) (pipe, error) {
 	}
 
 	// parse pattern
-	patternStr, err := getCompoundToken(lex)
+	patternStr, err := lex.nextCompoundToken()
 	if err != nil {
 		return nil, fmt.Errorf("cannot read 'pattern': %w", err)
 	}

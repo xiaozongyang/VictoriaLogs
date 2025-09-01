@@ -104,7 +104,7 @@ func parsePipeReplace(lex *lexer) (pipe, error) {
 	}
 	lex.nextToken()
 
-	oldSubstr, err := getCompoundToken(lex)
+	oldSubstr, err := lex.nextCompoundToken()
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse oldSubstr in 'replace': %w", err)
 	}
@@ -113,7 +113,7 @@ func parsePipeReplace(lex *lexer) (pipe, error) {
 	}
 	lex.nextToken()
 
-	newSubstr, err := getCompoundToken(lex)
+	newSubstr, err := lex.nextCompoundToken()
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse newSubstr in 'replace(%q': %w", oldSubstr, err)
 	}
