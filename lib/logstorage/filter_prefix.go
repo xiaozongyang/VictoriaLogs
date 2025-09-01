@@ -111,7 +111,7 @@ func matchTimestampISO8601ByPrefix(bs *blockSearch, ch *columnHeader, bm *bitmap
 		return
 	}
 	// There is no sense in trying to parse prefix, since it may contain incomplete timestamp.
-	// We cannot compar binary representation of timestamp and need converting
+	// We cannot compare binary representation of timestamp and need converting
 	// the timestamp to string before searching for the prefix there.
 	if !matchBloomFilterAllTokens(bs, ch, tokens) {
 		bm.resetBits()
