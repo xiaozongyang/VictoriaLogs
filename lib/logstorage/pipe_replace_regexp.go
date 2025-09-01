@@ -147,12 +147,10 @@ func parsePipeReplaceRegexp(lex *lexer) (pipe, error) {
 
 	limit := uint64(0)
 	if lex.isKeyword("limit") {
-		lex.nextToken()
-		n, ok := tryParseUint64(lex.token)
-		if !ok {
-			return nil, fmt.Errorf("cannot parse 'limit %s' in 'replace_regexp'", lex.token)
+		n, err := parseLimit(lex)
+		if err != nil {
+			return nil, err
 		}
-		lex.nextToken()
 		limit = n
 	}
 

@@ -89,13 +89,17 @@ func parsePipeOffset(lex *lexer) (pipe, error) {
 	if !lex.isKeyword("offset", "skip") {
 		return nil, fmt.Errorf("expecting 'offset' or 'skip'; got %q", lex.token)
 	}
+	op := lex.token
+	lex.nextToken()
 
-	lex.nextToken()
-	n, err := parseUint(lex.token)
+	token, err := lex.nextCompoundToken()
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse the number of rows to skip from %q: %w", lex.token, err)
+		return nil, fmt.Errorf("cannot parse '%s': %w", op, err)
 	}
-	lex.nextToken()
+	n, err := parseUint(token)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse '%s %s': %w", op, token, err)
+	}
 	po := &pipeOffset{
 		offset: n,
 	}

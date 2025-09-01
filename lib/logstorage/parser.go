@@ -166,7 +166,7 @@ func (lex *lexer) isAllowedCompoundToken(stopTokens []string) bool {
 
 	// Regular word token is allowed to be a part of compound token.
 	for _, r := range lex.token {
-		if !isTokenRune(r) && r != '.' {
+		if !isTokenRune(r) {
 			return false
 		}
 	}
@@ -179,6 +179,7 @@ var glueCompoundTokens = []string{
 	"-", // Seen in hostnames: foo-bar-baz
 	"/", // Seen in paths: foo/bar/baz
 	":", // Seen in tcp addresses: foo:1235
+	".", // Seen in hostnames: foobar.com
 	"$", // Seen in PHP-like vars: $foo
 }
 
@@ -282,7 +283,7 @@ again:
 
 	// Try decoding simple token
 	tokenLen := 0
-	for isTokenRune(r) || r == '.' {
+	for isTokenRune(r) {
 		tokenLen += size
 		r, size = utf8.DecodeRuneInString(s[tokenLen:])
 	}
@@ -3539,9 +3540,9 @@ func parseUint(s string) (uint64, error) {
 		if !ok {
 			return 0, fmt.Errorf("cannot parse %q as unsigned integer: %w", s, err)
 		}
-		if nn < 0 {
-			return 0, fmt.Errorf("cannot parse negative value %q as unsigned integer", s)
-		}
+	}
+	if nn < 0 {
+		return 0, fmt.Errorf("cannot parse negative value %q as unsigned integer", s)
 	}
 	return uint64(nn), nil
 }

@@ -1463,11 +1463,10 @@ func parseByStatsFields(lex *lexer) ([]*byStatsField, error) {
 		if lex.isKeyword(":") {
 			// Parse bucket size
 			lex.nextToken()
-			bucketSizeStr := lex.token
-			lex.nextToken()
-			if bucketSizeStr == "/" {
-				bucketSizeStr += lex.token
-				lex.nextToken()
+
+			bucketSizeStr, err := lex.nextCompoundToken()
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse bucket size for field %q: %w", fieldName, err)
 			}
 			if bucketSizeStr != "year" && bucketSizeStr != "month" {
 				bucketSize, ok := tryParseBucketSize(bucketSizeStr)
@@ -1481,12 +1480,12 @@ func parseByStatsFields(lex *lexer) ([]*byStatsField, error) {
 			// Parse bucket offset
 			if lex.isKeyword("offset") {
 				lex.nextToken()
-				bucketOffsetStr := lex.token
-				lex.nextToken()
-				if bucketOffsetStr == "-" {
-					bucketOffsetStr += lex.token
-					lex.nextToken()
+
+				bucketOffsetStr, err := lex.nextCompoundToken()
+				if err != nil {
+					return nil, fmt.Errorf("cannot parse offset token for %q: %w", fieldName, err)
 				}
+
 				bucketOffset, ok := tryParseBucketOffset(bucketOffsetStr)
 				if !ok {
 					return nil, fmt.Errorf("cannot parse bucket offset for field %q: %q", fieldName, bucketOffsetStr)
@@ -1561,21 +1560,21 @@ func tryParseBucketSize(s string) (float64, bool) {
 
 	// Try parsing s as floating point number
 	if f, ok := tryParseFloat64(s); ok {
-		return f, true
+		return f, f > 0
 	}
 
 	// Try parsing s as duration (1s, 5m, etc.)
 	if nsecs, ok := tryParseDuration(s); ok {
-		return float64(nsecs), true
+		return float64(nsecs), nsecs > 0
 	}
 
 	// Try parsing s as bytes (KiB, MB, etc.)
 	if n, ok := tryParseBytes(s); ok {
-		return float64(n), true
+		return float64(n), n > 0
 	}
 
 	if n, ok := tryParseIPv4Mask(s); ok {
-		return float64(n), true
+		return float64(n), n > 0
 	}
 
 	return 0, false

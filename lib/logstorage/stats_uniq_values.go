@@ -399,12 +399,10 @@ func parseStatsUniqValues(lex *lexer) (statsFunc, error) {
 		fieldFilters: fieldFilters,
 	}
 	if lex.isKeyword("limit") {
-		lex.nextToken()
-		n, ok := tryParseUint64(lex.token)
-		if !ok {
-			return nil, fmt.Errorf("cannot parse 'limit %s' for 'uniq_values': %w", lex.token, err)
+		n, err := parseLimit(lex)
+		if err != nil {
+			return nil, err
 		}
-		lex.nextToken()
 		su.limit = n
 	}
 	return su, nil

@@ -839,14 +839,19 @@ func parsePipeStreamContext(lex *lexer) (pipe, error) {
 	timeWindow := pipeStreamContextDefaultTimeWindow
 	if lex.isKeyword("time_window") {
 		lex.nextToken()
-		d, ok := tryParseDuration(lex.token)
+
+		token, err := lex.nextCompoundToken()
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse 'time_window': %w", err)
+		}
+
+		d, ok := tryParseDuration(token)
 		if !ok {
-			return nil, fmt.Errorf("cannot parse 'time_window %s'; it must contain valid duration", lex.token)
+			return nil, fmt.Errorf("cannot parse 'time_window %s'; it must contain valid duration", token)
 		}
 		if timeWindow <= 0 {
-			return nil, fmt.Errorf("'time_window' must be positive; got %s", lex.token)
+			return nil, fmt.Errorf("'time_window' must be positive; got %s", token)
 		}
-		lex.nextToken()
 		timeWindow = d
 	}
 
