@@ -5308,7 +5308,7 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "max(vl_max_disk_space_usage_bytes{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]) by (job)\n/\nmax(vl_total_disk_space_bytes{job=~\"$job\", instance=~\"$instance\"}) by (job) > 0",
+              "expr": "max(max_over_time(vl_max_disk_space_usage_bytes{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])) by (job)\n/\nmax(vl_total_disk_space_bytes{job=~\"$job\", instance=~\"$instance\"}) by (job) > 0",
               "hide": false,
               "interval": "",
               "legendFormat": "max space retention of instances",
@@ -5322,7 +5322,7 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "max(vl_data_size_bytes{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]) by (job)\n/\nmax(vl_total_disk_space_bytes{job=~\"$job\", instance=~\"$instance\"}) by (job)",
+              "expr": "max(max_over_time(vl_data_size_bytes{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval])) by (job)\n/\nmax(vl_total_disk_space_bytes{job=~\"$job\", instance=~\"$instance\"}) by (job)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{job}}",
@@ -5807,7 +5807,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"})) by (job)",
+              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -6020,7 +6020,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(vl_insert_processors_count{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval]) by (job)",
+              "expr": "max(max_over_time(vl_insert_processors_count{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -6034,7 +6034,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(vm_concurrent_insert_capacity{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])",
+              "expr": "max(max_over_time(vm_concurrent_insert_capacity{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
               "legendFormat": "soft limit",
@@ -6143,7 +6143,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "sum(vl_pending_rows{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval]) by (type)",
+              "expr": "sum(vl_pending_rows{job=~\"$job\", instance=~\"$instance_storage\"}) by (type)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -6602,7 +6602,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"})) by (job)",
+              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -8501,7 +8501,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_insert\"})) by (job)",
+              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -8713,7 +8713,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(vl_insert_processors_count{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval]) by (job)",
+              "expr": "max(max_over_time(vl_insert_processors_count{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -8727,7 +8727,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(vm_concurrent_insert_capacity{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval])",
+              "expr": "max(max_over_time(vm_concurrent_insert_capacity{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval]))",
               "hide": false,
               "instant": false,
               "legendFormat": "soft limit",
@@ -9337,7 +9337,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(process_resident_memory_bytes{job=~\"$job\", instance=~\"$instance_select\"}[$__rate_interval]) by (job)",
+              "expr": "sum(process_resident_memory_bytes{job=~\"$job\", instance=~\"$instance_select\"}) by (job)",
               "interval": "",
               "legendFormat": "{{job}}",
               "range": true,
@@ -9694,7 +9694,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_select\"})) by (job)",
+              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_select\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
