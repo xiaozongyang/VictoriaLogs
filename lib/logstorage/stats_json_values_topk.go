@@ -12,7 +12,6 @@ type statsJSONValuesTopkProcessor struct {
 
 	h statsJSONValuesTopkHeap
 
-	fieldsBuf     []Field
 	sortColumns   [][]string
 	sortValuesBuf []string
 }

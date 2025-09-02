@@ -207,6 +207,7 @@ func initPipeParsers() {
 		"replace":           parsePipeReplace,
 		"replace_regexp":    parsePipeReplaceRegexp,
 		"rm":                parsePipeDelete,
+		"running_stats":     parsePipeRunningStats,
 		"sample":            parsePipeSample,
 		"skip":              parsePipeOffset,
 		"sort":              parsePipeSort,

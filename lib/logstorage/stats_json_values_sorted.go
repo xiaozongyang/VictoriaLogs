@@ -16,7 +16,6 @@ type statsJSONValuesSortedProcessor struct {
 
 	entries []*statsJSONValuesSortedEntry
 
-	fieldsBuf     []Field
 	sortColumns   [][]string
 	sortValuesBuf []string
 }

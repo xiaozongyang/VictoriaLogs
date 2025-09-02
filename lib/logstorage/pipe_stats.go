@@ -74,7 +74,7 @@ type statsFunc interface {
 	// String returns string representation of statsFunc
 	String() string
 
-	// updateNeededFields update pf with the fields needed for calculating the given stats
+	// updateNeededFields must update pf with the fields needed for calculating the given stats
 	updateNeededFields(pf *prefixfilter.Filter)
 
 	// newStatsProcessor must create new statsProcessor for calculating stats for the given statsFunc
@@ -211,11 +211,6 @@ func (ps *pipeStats) updateNeededFields(pf *prefixfilter.Filter) {
 	pfOrig := pf.Clone()
 	pf.Reset()
 
-	// byFields are needed unconditionally, since the output number of rows depends on them.
-	for _, bf := range ps.byFields {
-		pf.AddAllowFilter(bf.name)
-	}
-
 	for _, f := range ps.funcs {
 		if pfOrig.MatchString(f.resultName) {
 			f.f.updateNeededFields(pf)
@@ -223,6 +218,11 @@ func (ps *pipeStats) updateNeededFields(pf *prefixfilter.Filter) {
 				pf.AddAllowFilters(f.iff.allowFilters)
 			}
 		}
+	}
+
+	// byFields are needed unconditionally, since the output number of rows depends on them.
+	for _, bf := range ps.byFields {
+		pf.AddAllowFilter(bf.name)
 	}
 }
 

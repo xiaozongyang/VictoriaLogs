@@ -753,7 +753,7 @@ func newDelimiterRowFields(r *streamContextRow, streamID string) []Field {
 		},
 		{
 			Name:  "_stream",
-			Value: getFieldValue(r.fields, "_stream"),
+			Value: getFieldValueByName(r.fields, "_stream"),
 		},
 		{
 			Name:  "_msg",

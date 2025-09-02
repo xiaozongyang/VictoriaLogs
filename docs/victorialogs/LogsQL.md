@@ -1514,6 +1514,7 @@ LogsQL supports the following pipes:
 - [`rename`](#rename-pipe) renames [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`replace`](#replace-pipe) replaces substrings in the specified [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`replace_regexp`](#replace_regexp-pipe) updates [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) with regular expressions.
+- [`running_stats`](#running_stats-pipe) performs running stats calculations over the given [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`sample`](#sample-pipe) returns a sample of the matching logs according to the provided `sample` value.
 - [`sort`](#sort-pipe) sorts logs by the given [fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
 - [`stats`](#stats-pipe) calculates various stats over the selected logs.
@@ -2754,6 +2755,106 @@ with `***` in the `foo` field only if `user_type` field equals to `admin`:
 _time:5m | replace_regexp if (user_type:=admin) ("password: [^ ]+", "") at foo
 ```
 
+### running_stats pipe
+
+The `<q> | running_stats ...` [pipe](#pipes) calculates running stats (such as [running count](#count-running_stats) or [running sum](#sum-running_stats))
+over the specified [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model) returned by `<q>` [query](#query-syntax).
+
+The running stats is calculated over the logs sorted by time, so he `<q>` must return the [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field)
+in order to properly calculate the running stats.
+
+The `running_stats` pipe puts all the logs returned by `<q>` in memory, so make sure the `<q>` returns the limited number of logs in order to avoid high memory usage.
+
+For example, the following LogsQL query calculates [running sum](#sum-running_stats) for the `hits` field over the logs for the last 5 minutes:
+
+```logsql
+_time:5m | running_stats sum(hits) as running_hits
+```
+
+The `| running_stats ...` pipe has the following basic format:
+
+```logsql
+... | running_stats
+  stats_func1(...) as result_name1,
+  ...
+  stats_funcN(...) as result_nameN
+```
+
+Where `stats_func*` is any of the supported [running stats function](#running_stats-pipe-functions), while the `result_name*` is the name of the log field
+to store the result of the corresponding stats function. The `as` keyword is optional.
+
+For example, the following query calculates the following running stats for logs over the last 5 minutes:
+
+- the number of logs with the help of [`count` function](#count-running_stats);
+- the sum of `hits` field with the help of [`sum` function](#sum-running_stats):
+
+```logsql
+_time:5m
+    | running_stats
+        count() as running_logs,
+        sum(hits) as running_hits
+```
+
+It is allowed omitting the result name. In this case the result name equals to the string representation of the used [running stats function](#running_stats-pipe-functions).
+For example, the following query returns the same stats as the previous one, but gives `count()` and `sum(hits)` names for the returned fields:
+
+```logsql
+_time:5m | running_stats count(), sum(hits)
+```
+
+It is useful to combine `running_stats` with [stats by time buckets](#stats-by-time-buckets). For example, the following query returns per-hour number of logs over the last day,
+plus running number of logs.
+
+```logsql
+_time:1d
+    | stats by (_time:hour) count() as hits
+    | running_stats sum(hits) as running_hits
+```
+
+See also:
+
+- [`running_stats` pipe functions](#running_stats-pipe-functions)
+- [`running_stats` stats by fields](#running_stats-by-fields)
+- [`stats` pipe](#stats-pipe)
+- [`sort` pipe](#sort-pipe)
+
+#### running_stats by fields
+
+The following LogsQL syntax can be used for calculating independent running stats per group of log fields:
+
+```logsql
+<q> | running_stats by (field1, ..., fieldM)
+  stats_func1(...) as result_name1,
+  ...
+  stats_funcN(...) as result_nameN
+```
+
+This calculates `stats_func*` per each `(field1, ..., fieldM)` group of [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+seen in the logs returned by `<q>` [query](#query-syntax).
+
+For example, the following query calculates running number of logs and running number of `hits` over the last 5 minutes,
+grouped by `(host, path)` fields:
+
+```logsql
+_time:5m
+    | running_stats by (host, path)
+        count() running_logs,
+        sum(hits) running_hits
+```
+
+The `by` keyword can be skipped in `running_stats ...` pipe. For example, the following query is equivalent to the previous one:
+
+```logsql
+_time:5m | running_stats (host, path) count() running_logs, sum(hits) running_hits
+```
+
+See also:
+
+- [`running_stats` pipe](#running_stats-pipe)
+- [`running_stats` pipe functions](#running_stats-pipe-functions)
+
+
+
 ### sample pipe
 
 The `<q> | sample N` [pipe](#pipes) returns `1/N`th random sample of logs for the `<q>` [query](#query-syntax).
@@ -2864,14 +2965,14 @@ See also:
 
 ### stats pipe
 
-`<q> | stats ...` pipe calculate various stats over the logs returned by `<q>` [query](#query-syntax).
+The `<q> | stats ...` [pipe](#pipes) calculates various stats over the logs returned by `<q>` [query](#query-syntax).
 For example, the following LogsQL query uses [`count` stats function](#count-stats) for calculating the number of logs for the last 5 minutes:
 
 ```logsql
 _time:5m | stats count() as logs_total
 ```
 
-`| stats ...` pipe has the following basic format:
+The `| stats ...` pipe has the following basic format:
 
 ```logsql
 ... | stats
@@ -2880,7 +2981,7 @@ _time:5m | stats count() as logs_total
   stats_funcN(...) as result_nameN
 ```
 
-Where `stats_func*` is any of the supported [stats function](#stats-pipe-functions), while `result_name*` is the name of the log field
+Where `stats_func*` is any of the supported [stats function](#stats-pipe-functions), while the `result_name*` is the name of the log field
 to store the result of the corresponding stats function. The `as` keyword is optional.
 
 For example, the following query calculates the following stats for logs over the last 5 minutes:
@@ -2899,7 +3000,7 @@ _time:5m | count() logs_total, count_uniq(_stream) streams_total
 ```
 
 It is allowed omitting the result name. In this case the result name equals to the string representation of the used [stats function](#stats-pipe-functions).
-For example, the following query returns the same stats as the previous one, but gives uses `count()` and `count_uniq(_stream)` names for the returned fields:
+For example, the following query returns the same stats as the previous one, but gives `count()` and `count_uniq(_stream)` names for the returned fields:
 
 ```logsql
 _time:5m | count(), count_uniq(_stream)
@@ -2914,6 +3015,7 @@ See also:
 - [stats by field buckets](#stats-by-field-buckets)
 - [stats by IPv4 buckets](#stats-by-ipv4-buckets)
 - [stats with additional filters](#stats-with-additional-filters)
+- [`running_stats` pipe](#running_stats-pipe)
 - [`math` pipe](#math-pipe)
 - [`sort` pipe](#sort-pipe)
 - [`uniq` pipe](#uniq-pipe)
@@ -2970,8 +3072,19 @@ This calculates `stats_func*` per each `step` of the [`_time`](https://docs.vict
 across logs returned by `<q>` [query](#query-syntax). The `step` can have any [duration value](#duration-values).
 For example, the following LogsQL query returns per-minute number of logs and unique ip addresses over the last 5 minutes:
 
-```
+```logsql
 _time:5m | stats by (_time:1m) count() logs_total, count_uniq(ip) ips_total
+```
+
+It might be useful to calculate running stats over the calculated per-time bucket stats, with the help of [`running_stats` pipe](#running_stats-pipe).
+For example, the following query adds running number of logs into `running_logs_total` field for the query above:
+
+```logsql
+_time:5m
+    | stats by (_time:1m)
+        count() as logs_total,
+        count_uniq(ip) as ips_total
+    | running_stats sum(logs_total) as running_logs_total
 ```
 
 Additionally, the following `step` values are supported:
@@ -2991,6 +3104,7 @@ See also:
 
 - [`stats` pipe](#stats-pipe)
 - [`stats` pipe functions](#stats-pipe-functions)
+- [`running_stats` pipe](#running_stats-pipe)
 - [`math` pipe](#math-pipe)
 
 #### Stats by time buckets with timezone offset
@@ -3572,6 +3686,115 @@ The `<filters>` can contain arbitrary [filters](#filters). For example, the foll
 _time:5m | unroll if (value_type:="json_array") (value)
 ```
 
+## running_stats pipe functions
+
+LogsQL supports the following functions for [`running_stats` pipe](#running_stats-pipe):
+
+- [`count`](#count-running_stats) returns the number of log entries.
+- [`max`](#max-running_stats) returns the maximum value over the given [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+- [`min`](#min-running_stats) returns the minimum value over the given [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+- [`sum`](#sum-running_stats) returns the sum for the given numeric [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+
+### count running_stats
+
+`count()` [`running_stats` pipe function](#running_stats-pipe-functions) calculates running number of selected logs.
+
+For example, the following query adds the `running_logs` field to the selected logs over the last 5 minutes:
+
+```logsql
+_time:5m | running_stats count() running_logs
+```
+
+It is possible to calculate the number of logs with non-empty values for some [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+with the `count(fieldName)` syntax. For example, the following query returns running number of logs with non-empty `username` field over the last 5 minutes:
+
+```logsql
+_time:5m | running_stats count(username) running_logs_with_username
+```
+
+If multiple fields are enumerated inside `count()`, then it counts the number of logs with at least a single non-empty field mentioned inside `count()`.
+For example, the following query returns the number of logs with non-empty `username` or `password` [fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+over the last 5 minutes:
+
+```logsql
+_time:5m | running_stats count(username, password) running_logs_with_username_or_password
+```
+
+It is possible to calculate the number of logs with at least a single non-empty field with common prefix with `count(prefix*)` syntax.
+For example, the following query returns the number of logs with at least a single non-empty field with `foo` prefix over the last 5 minutes:
+
+```logsql
+_time:5m | running_stats count(foo*)
+```
+
+See also:
+
+- [`sum`](#sum-running_stats)
+- [`min`](#min-running_stats)
+- [`max`](#max-running_stats)
+
+### sum running_stats
+
+`sum(field1, ..., fieldN)` [`running_stats` pipe function](#running_stats-pipe-functions) calculates running sum of numeric values across
+all the mentioned [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+Non-numeric values are skipped. If all the values across `field1`, ..., `fieldN` are non-numeric, then `NaN` is returned.
+
+For example, the following query returns running sum of numeric values for the `duration` [field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+over logs for the last 5 minutes:
+
+```logsql
+_time:5m | running_stats sum(duration) running_sum_duration
+```
+
+It is possible to find running sum for all the fields with common prefix via `sum(prefix*)` syntax.
+
+See also:
+
+- [`count`](#count-running_stats)
+- [`max`](#max-running_stats)
+- [`min`](#min-running_stats)
+
+### max running_stats
+
+`max(field1, ..., fieldN)` [`running_stats` pipe function](#running_stats-pipe-functions) returns running maximum across
+all the mentioned [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+
+For example, the following query returns running maximum for the `duration` [field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+over logs for the last 5 minutes:
+
+```logsql
+_time:5m | running_stats max(duration) running_max_duration
+```
+
+It is possible to calculate running maximum value across all the fields with common prefix via `max(prefix*)` syntax.
+
+See also:
+
+- [`min`](#min-running_stats)
+- [`sum`](#sum-running_stats)
+- [`count`](#count-running_stats)
+
+### min running_stats
+
+`min(field1, ..., fieldN)` [`running_stats` pipe function](#running_stats-pipe-functions) returns running minimum across
+all the mentioned [log fields](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model).
+
+For example, the following query returns running minimum for the `duration` [field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+over logs for the last 5 minutes:
+
+```logsql
+_time:5m | running_stats min(duration) running_min_duration
+```
+
+It is possible to find running minimum across all the fields with common prefix via `min(prefix*)` syntax.
+
+See also:
+
+- [`max`](#max-running_stats)
+- [`sum`](#sum-running_stats)
+- [`count`](#count-running_stats)
+
+
 ## stats pipe functions
 
 LogsQL supports the following functions for [`stats` pipe](#stats-pipe):
@@ -3636,7 +3859,7 @@ For example, the following query returns the number of logs over the last 5 minu
 _time:5m | stats count() logs
 ```
 
-It is possible calculating the number of logs with non-empty values for some [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
+It is possible to calculate the number of logs with non-empty values for some [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
 with the `count(fieldName)` syntax. For example, the following query returns the number of logs with non-empty `username` field over the last 5 minutes:
 
 ```logsql
