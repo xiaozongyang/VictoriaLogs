@@ -18,6 +18,10 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+## [v1.32.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.32.0)
+
+Released at 2025-09-03
+
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`split` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#split-pipe) for splitting log fields by the given separator. It is useful for parsing CSV or tab-separated data stored in log values.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`running_stats` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#running_stats-pipe) for calculating [running sum](https://en.wikipedia.org/wiki/Running_total), running min, running max and running count over query results.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`total_stats` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#total_stats-pipe) for calculating global sum, global min, global max and global count over query results.
