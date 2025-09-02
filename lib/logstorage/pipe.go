@@ -211,6 +211,7 @@ func initPipeParsers() {
 		"sample":            parsePipeSample,
 		"skip":              parsePipeOffset,
 		"sort":              parsePipeSort,
+		"split":             parsePipeSplit,
 		"stats":             parsePipeStats,
 		"stats_remote":      parsePipeStats,
 		"stream_context":    parsePipeStreamContext,

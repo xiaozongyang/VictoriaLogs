@@ -18,6 +18,7 @@ according to [these docs](https://docs.victoriametrics.com/victorialogs/quicksta
 
 ## tip
 
+* FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`split` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#split-pipe) for splitting log fields by the given separator. It is useful for parsing CSV or tab-separated data stored in log values.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`running_stats` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#running_stats-pipe) for calculating [running sum](https://en.wikipedia.org/wiki/Running_total), running min, running max and running count over query results.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add [`total_stats` pipe](https://docs.victoriametrics.com/victorialogs/logsql/#total_stats-pipe) for calculating global sum, global min, global max and global count over query results.
 * FEATURE: [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/): add an ability to sort logs returned by [`json_values` stats function](https://docs.victoriametrics.com/victorialogs/logsql/#json_values-stats) via `... | stats json_values() sort by (...)` syntax. The sorting can be combined with the `limit N` in order to get top N logs. For example, the following query returns up to 3 the most recent logs per every `host` over the last 5 minutes: `_time:5m | stats json_values() sort by (_time desc) limit 3 as last_3_host_logs`.

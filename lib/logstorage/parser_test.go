@@ -1747,6 +1747,12 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`* | total_stats count() x`, `* | total_stats count(*) as x`)
 	f(`* | total_stats by (x, y) sum(qwe) as b, min(x)`, `* | total_stats by (x, y) sum(qwe) as b, min(x) as "min(x)"`)
 
+	// split pipe
+	f(`* | split ","`, `* | split ","`)
+	f(`* | split "," from x`, `* | split "," from x`)
+	f(`* | split "," from x as y`, `* | split "," from x as y`)
+	f(`* | split "," as y`, `* | split "," as y`)
+
 	// stats pipe count
 	f(`* | STATS bY (foo, b.a/r, "b az",) count(*) XYz`, `* | stats by (foo, "b.a/r", "b az") count(*) as XYz`)
 	f(`* | stats by() COUNT(x, 'a).b,c|d',) as qwert`, `* | stats count(x, "a).b,c|d") as qwert`)
@@ -2522,6 +2528,10 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`foo | total_stats abc`)
 	f(`foo | total_stats abc()`)
 
+	// invalid split
+	f(`foo | split`)
+	f(`foo | split abc,`)
+
 	// missing stats
 	f(`foo | stats`)
 
@@ -3061,11 +3071,14 @@ func TestQueryGetNeededColumns(t *testing.T) {
 	f(`* | replace if (q:w p:a) ("a", "b") at x | count() r1`, `p,q`, ``)
 	f(`* | replace_regexp ("a", "b") at x | count() r1`, ``, ``)
 	f(`* | replace_regexp if (q:w p:a) ("a", "b") at x | count() r1`, `p,q`, ``)
+	f(`* | running_stats count() | count() r1`, ``, ``)
 	f(`* | sort by (a,b) | count() r1`, ``, ``)
+	f(`* | split ' ' | count() r1`, ``, ``)
 	f(`* | stats count_uniq(a, b) as c | count() r1`, ``, ``)
 	f(`* | stats count_uniq(a, b) if (q:w p:a) as c | count() r1`, ``, ``)
 	f(`* | stats by (a1,a2) count_uniq(a, b) as c | count() r1`, `a1,a2`, ``)
 	f(`* | stats by (a1,a2) count_uniq(a, b) if (q:w p:a) as c | count() r1`, `a1,a2`, ``)
+	f(`* | total_stats count() | count() r1`, ``, ``)
 	f(`* | union (foo) | count() r1`, ``, ``)
 	f(`* | uniq by (a, b) | count() r1`, `a,b`, ``)
 	f(`* | unpack_json from x | count() r1`, ``, ``)
@@ -3304,12 +3317,15 @@ func TestQueryCanReturnLastNResults(t *testing.T) {
 	f("* | rename foo bar", true)
 	f("* | replace ('foo', 'bar')", true)
 	f("* | replace_regexp ('foo', 'bar')", true)
+	f("* | running_stats count()", false)
 	f("* | sample 10", false)
 	f("* | sort by (x)", false)
+	f("* | split ' '", true)
 	f("* | stats count()", false)
 	f("* | stream_context before 10 after 20", false)
 	f("* | time_add 1h", true)
 	f("* | top 5 by (x)", false)
+	f("* | total_stats count()", false)
 	f("* | union (x)", false)
 	f("* | uniq (x)", false)
 	f("* | unpack_json x", true)
@@ -3372,10 +3388,13 @@ func TestQueryCanLiveTail(t *testing.T) {
 	f("* | rename a b", true)
 	f("* | replace ('foo', 'bar')", true)
 	f("* | replace_regexp ('foo', 'bar')", true)
+	f("* | running_stats count()", false)
 	f("* | sort by (a)", false)
+	f("* | split ' '", true)
 	f("* | stats count() rows", false)
 	f("* | stream_context after 10", false)
 	f("* | top 10 by (x)", false)
+	f("* | total_stats count()", false)
 	f("* | union (foo)", false)
 	f("* | uniq by (a)", false)
 	f("* | unpack_json", true)
@@ -3477,6 +3496,7 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Success(t *testing.T) {
 	f("* | rename foo bar | count() x", nsecsPerDay, []string{"_time"}, `* | rename foo as bar | stats by (_time:86400000000000) count(*) as x`)
 	f("* | replace ('foo', 'bar') | count() x", nsecsPerDay, []string{"_time"}, `* | replace (foo, bar) | stats by (_time:86400000000000) count(*) as x`)
 	f("* | replace_regexp ('foo', 'bar') | count() x", nsecsPerDay, []string{"_time"}, `* | replace_regexp (foo, bar) | stats by (_time:86400000000000) count(*) as x`)
+	f("* | split 'foo' | count() x", nsecsPerDay, []string{"_time"}, `* | split foo | stats by (_time:86400000000000) count(*) as x`)
 	f("* | time_add 1h | count() x", nsecsPerDay, []string{"_time"}, `* | time_add 1h | stats by (_time:86400000000000) count(*) as x`)
 	f("* | unpack_json x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_json from x | stats by (_time:86400000000000) count(*) as x`)
 	f("* | unpack_logfmt x | count() x", nsecsPerDay, []string{"_time"}, `* | unpack_logfmt from x | stats by (_time:86400000000000) count(*) as x`)
@@ -3526,6 +3546,7 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Failure(t *testing.T) {
 
 	f(`* | stats by (host) count() total | rename host as server | fields host, total`)
 	f(`* | by (x) count() | collapse_nums at x`)
+	f(`* | count() x | split ' '`)
 
 	// offset and limit pipes are disallowed, since they cannot be applied individually per each step
 	f(`* | by (x) count() | offset 10`)
@@ -3686,6 +3707,7 @@ func TestQueryGetStatsByFields_Failure(t *testing.T) {
 	f(`foo | rename x y`)
 	f(`foo | count() | replace ("foo", "bar")`)
 	f(`foo | count() | replace_regexp ("foo.+bar", "baz")`)
+	f(`foo | count() | split ' '`)
 	f(`foo | count() | stream_context after 10`)
 	f(`foo | count() | top 5 by (x)`)
 	f(`foo | count() | union (foo)`)
