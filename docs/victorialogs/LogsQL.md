@@ -3819,10 +3819,27 @@ returns up to 3 JSON-encoded logs per every `host`:
 _time:5m | stats by (host) json_values() limit 3 as json_logs
 ```
 
+It is possible to sort the selected log entries by appending `sort by (...)`. For example, the following query returns per-`host` logs
+over the last 5 minutes sorted by descending order of [`_time` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#time-field):
+
+```logsql
+_time:5m | stats by (host) json_values() sort by (_time desc) as json_logs
+```
+
+The `sort by (...)` allows selecting top N logs per each group if it is combined with `limit N`. For example, the following query selects up to 3 the most recent logs per every `host`
+over the last 5 minutes:
+
+```logsql
+_time:5m | stats by (host) json_values() sort by (_time desc) limit 3 as json_logs
+```
+
 See also:
 
-- [`values`](#values-stats)
 - [`unroll` pipe](#unroll-pipe)
+- [`row_min`](#row_min-stats)
+- [`row_max`](#row_max-stats)
+- [`row_any`](#row_any-stats)
+- [`values`](#values-stats)
 
 ### max stats
 
@@ -3976,6 +3993,7 @@ See also:
 
 - [`row_max`](#row_max-stats)
 - [`row_min`](#row_min-stats)
+- [`json_values`](#json_values-stats)
 
 ### row_max stats
 
@@ -4005,6 +4023,7 @@ See also:
 - [`max`](#max-stats)
 - [`row_min`](#row_min-stats)
 - [`row_any`](#row_any-stats)
+- [`json_values`](#json_values-stats)
 
 ### row_min stats
 
@@ -4034,6 +4053,7 @@ See also:
 - [`min`](#min-stats)
 - [`row_max`](#row_max-stats)
 - [`row_any`](#row_any-stats)
+- [`json_values`](#json_values-stats)
 
 ### sum stats
 

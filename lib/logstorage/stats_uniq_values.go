@@ -390,6 +390,20 @@ func marshalJSONArray(dst []byte, items []string) []byte {
 	return dst
 }
 
+func marshalJSONValues(dst []byte, items []string) []byte {
+	if len(items) == 0 {
+		return append(dst, "[]"...)
+	}
+	dst = append(dst, '[')
+	dst = append(dst, items[0]...)
+	for _, item := range items[1:] {
+		dst = append(dst, ',')
+		dst = append(dst, item...)
+	}
+	dst = append(dst, ']')
+	return dst
+}
+
 func parseStatsUniqValues(lex *lexer) (statsFunc, error) {
 	fieldFilters, err := parseStatsFuncFieldFilters(lex, "uniq_values")
 	if err != nil {
