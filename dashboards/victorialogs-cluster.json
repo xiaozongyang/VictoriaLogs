@@ -5806,7 +5806,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"})) by (job)",
+              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -6601,7 +6601,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"})) by (job)",
+              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_storage\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -8500,7 +8500,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_insert\"})) by (job)",
+              "expr": "max(increase(vm_concurrent_insert_limit_reached_total{job=~\"$job\", instance=~\"$instance_insert\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
@@ -9693,7 +9693,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_select\"})) by (job)",
+              "expr": "max(increase(vl_concurrent_select_limit_reached_total{job=~\"$job\", instance=~\"$instance_select\"}[$__rate_interval])) by (job)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,

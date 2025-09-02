@@ -5433,7 +5433,7 @@
                 "uid": "$ds"
               },
               "editorMode": "code",
-              "expr": "max(rate(vm_concurrent_insert_limit_reached_total)) by (instance)",
+              "expr": "max(increase(vm_concurrent_insert_limit_reached_total[$__rate_interval])) by (instance)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
