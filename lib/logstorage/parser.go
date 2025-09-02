@@ -1003,6 +1003,18 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 			// This pipe doesn't change the set of fields.
 		case *pipeFirst, *pipeLast, *pipeSort:
 			// These pipes do not change the set of fields.
+		case *pipeRunningStats:
+			// `| running_stats ...` pipe must contain the same byFields as the preceding `stats` pipe.
+			if !hasNeededFieldsExceptTime(t.byFields, byFields) {
+				return nil, fmt.Errorf("the %q must contain the same list of fields as `stats` pipe in the query [%s]", t, q)
+			}
+			// `| running_stats ...` pipe cannot override byFields.
+			for _, f := range t.funcs {
+				if slices.Contains(byFields, f.resultName) {
+					return nil, fmt.Errorf("the %q field cannot be overridden at %q in the query [%s]", f.resultName, t, q)
+				}
+				metricFields[f.resultName] = struct{}{}
+			}
 		case *pipeMath:
 			// Allow `| math ...` pipe, since it adds additional metrics to the given set of fields.
 			// Verify that the result fields at math pipe do not override byFields.
@@ -1111,6 +1123,25 @@ func (q *Query) GetStatsByFieldsAddGroupingByTime(step int64) ([]string, error) 
 	}
 
 	return byFields, nil
+}
+
+func hasNeededFieldsExceptTime(fields, neededFields []string) bool {
+	for _, f := range neededFields {
+		if f == "_time" {
+			continue
+		}
+		if !slices.Contains(fields, f) {
+			return false
+		}
+	}
+
+	for _, f := range fields {
+		if !slices.Contains(neededFields, f) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getLastPipeStatsIdx(pipes []pipe) int {
