@@ -1739,6 +1739,14 @@ func TestParseQuery_Success(t *testing.T) {
 	// sample pipe
 	f(`* | sample 10`, `* | sample 10`)
 
+	// running_stats pipe
+	f(`* | running_stats count() x`, `* | running_stats count(*) as x`)
+	f(`* | running_stats by (x, y) sum(qwe) as b, min(x)`, `* | running_stats by (x, y) sum(qwe) as b, min(x) as "min(x)"`)
+
+	// total_stats pipe
+	f(`* | total_stats count() x`, `* | total_stats count(*) as x`)
+	f(`* | total_stats by (x, y) sum(qwe) as b, min(x)`, `* | total_stats by (x, y) sum(qwe) as b, min(x) as "min(x)"`)
+
 	// stats pipe count
 	f(`* | STATS bY (foo, b.a/r, "b az",) count(*) XYz`, `* | stats by (foo, "b.a/r", "b az") count(*) as XYz`)
 	f(`* | stats by() COUNT(x, 'a).b,c|d',) as qwert`, `* | stats count(x, "a).b,c|d") as qwert`)
@@ -2503,6 +2511,16 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`foo | sample bar`)
 	f(`foo | sample 0`)
 	f(`foo | sample -1`)
+
+	// invalid running_stats
+	f(`foo | running_stats`)
+	f(`foo | running_stats abc`)
+	f(`foo | running_stats abc()`)
+
+	// invalid total_stats
+	f(`foo | total_stats`)
+	f(`foo | total_stats abc`)
+	f(`foo | total_stats abc()`)
 
 	// missing stats
 	f(`foo | stats`)
@@ -3427,6 +3445,8 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Success(t *testing.T) {
 	f(`* | by (path) rate() rps | sort (rps) limit 3`, nsecsPerDay, []string{"path", "_time"}, `* | stats by (path, _time:86400000000000) rate() as rps | sort by (rps) partition by (_time) limit 3`)
 	f(`* | count() hits | running_stats sum(hits) running_hits`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | running_stats sum(hits) as running_hits`)
 	f(`* | count() hits | running_stats sum(hits) running_hits | rm hits`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | running_stats sum(hits) as running_hits | delete hits`)
+	f(`* | count() hits | total_stats sum(hits) running_hits`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | total_stats sum(hits) as running_hits`)
+	f(`* | count() hits | total_stats sum(hits) running_hits | rm hits`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | total_stats sum(hits) as running_hits | delete hits`)
 	f(`* | count() hits | math hits+bar as baz`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | math (hits + bar) as baz`)
 	f(`* | count() hits | fields _time, hits, bar`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | fields _time, hits, bar`)
 	f(`* | count() hits | delete foo, bar`, nsecsPerDay, []string{"_time"}, `* | stats by (_time:86400000000000) count(*) as hits | delete foo, bar`)
@@ -3488,6 +3508,10 @@ func TestQueryGetStatsByFieldsAddGroupingByTime_Failure(t *testing.T) {
 	f(`* | by (x) count() | running_stats by (x) sum(hits) x`)
 	f(`* | count() | running_stats by (x) sum(a) b`)
 	f(`* | by (x) count() | running_stats sum(a) b`)
+	f(`* | count() | total_stats sum(hits) _time`)
+	f(`* | by (x) count() | total_stats by (x) sum(hits) x`)
+	f(`* | count() | total_stats by (x) sum(a) b`)
+	f(`* | by (x) count() | total_stats sum(a) b`)
 	f(`* | by (x) count() | math a+b as x`)
 	f(`* | by (x) count() | math a+b as _time`)
 	f(`* | count() | fields a,b`)

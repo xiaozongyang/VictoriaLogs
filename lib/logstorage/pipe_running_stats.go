@@ -22,6 +22,9 @@ import (
 //
 // See https://docs.victoriametrics.com/victorialogs/logsql/#running_stats-pipe
 type pipeRunningStats struct {
+	// if isTotal is set, then total stats must be calculated instead of running stats (aka `total_stats` pipe).
+	isTotal bool
+
 	// byFields contains field names with optional buckets from 'by(...)' clause.
 	byFields []string
 
@@ -62,6 +65,9 @@ type runningStatsProcessor interface {
 
 func (ps *pipeRunningStats) String() string {
 	s := "running_stats"
+	if ps.isTotal {
+		s = "total_stats"
+	}
 
 	if len(ps.byFields) > 0 {
 		s += " by (" + fieldNamesString(ps.byFields) + ")"
@@ -273,12 +279,22 @@ func (psp *pipeRunningStatsProcessor) flush() error {
 			sps[i] = f.f.newRunningStatsProcessor()
 		}
 
+		if psp.ps.isTotal {
+			for _, row := range rows {
+				for i, sp := range sps {
+					sp.updateRunningStats(funcs[i].f, row.fields)
+				}
+			}
+		}
+
 		for _, row := range rows {
 			fields := make([]Field, 0, len(row.fields)+len(sps))
 			fields = append(fields, row.fields...)
 			for i, sp := range sps {
 				f := funcs[i]
-				sp.updateRunningStats(f.f, row.fields)
+				if !psp.ps.isTotal {
+					sp.updateRunningStats(f.f, row.fields)
+				}
 				result := sp.getRunningStats()
 				fields = append(fields, Field{
 					Name:  f.resultName,
@@ -357,11 +373,19 @@ func (wctx *pipeRunningStatsWriter) flush() {
 }
 
 func parsePipeRunningStats(lex *lexer) (pipe, error) {
-	var ps pipeRunningStats
 	if !lex.isKeyword("running_stats") {
 		return nil, fmt.Errorf("expecting `running_stats`; got %q", lex.token)
 	}
 	lex.nextToken()
+
+	return parsePipeRunningStatsExt(lex, "running_stats")
+}
+
+func parsePipeRunningStatsExt(lex *lexer, pipeName string) (pipe, error) {
+	var ps pipeRunningStats
+	if pipeName == "total_stats" {
+		ps.isTotal = true
+	}
 
 	if lex.isKeyword("by", "(") {
 		if lex.isKeyword("by") {

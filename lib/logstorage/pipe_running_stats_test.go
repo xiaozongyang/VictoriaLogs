@@ -30,6 +30,9 @@ func TestParsePipeRunningStatsFailure(t *testing.T) {
 	f(`running_stats by (x*) count()`)
 	f(`running_stats count() as *`)
 	f(`running_stats count() as x*`)
+
+	// duplicate output name
+	f(`running_stats sum() x, count() x`)
 }
 
 func TestPipeRunningStats(t *testing.T) {

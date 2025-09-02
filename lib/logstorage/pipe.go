@@ -216,6 +216,7 @@ func initPipeParsers() {
 		"stream_context":    parsePipeStreamContext,
 		"time_add":          parsePipeTimeAdd,
 		"top":               parsePipeTop,
+		"total_stats":       parsePipeTotalStats,
 		"union":             parsePipeUnion,
 		"uniq":              parsePipeUniq,
 		"unpack_json":       parsePipeUnpackJSON,
