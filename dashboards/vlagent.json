@@ -4961,7 +4961,8 @@
   "schemaVersion": 37,
   "style": "dark",
   "tags": [
-    "victoriametrics"
+    "victoriametrics",
+    "victorialogs"
   ],
   "templating": {
     "list": [
