@@ -367,7 +367,7 @@ it is very important to secure the write API:
 It is recommended setting the `-select.disable` command-line flag at `vlinsert` in order to disable search API.
 This will secure access to the stored logs in case an attacker has direct network access to `vlinsert`.
 
-For configuration examples using Bearer token, Basic auth, and mTLS see [these docs](http://localhost:1313/victoriametrics/vmauth/#authorization).
+For configuration examples using Bearer token, Basic auth, and mTLS see [these docs](https://docs.victoriametrics.com/victoriametrics/vmauth/#authorization).
 
 ### Tenant assignment
 
