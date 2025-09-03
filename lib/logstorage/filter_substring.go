@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 
@@ -42,7 +41,8 @@ func (fs *filterSubstring) getTokensHashes() []uint64 {
 }
 
 func (fs *filterSubstring) initTokens() {
-	fs.tokens = getTokensSkipFirstLast(fs.substring)
+	s := skipFirstLastToken(fs.substring)
+	fs.tokens = tokenizeStrings(nil, []string{s})
 	fs.tokensHashes = appendTokensHashes(nil, fs.tokens)
 }
 
@@ -82,15 +82,15 @@ func (fs *filterSubstring) applyToBlockSearch(bs *blockSearch, bm *bitmap) {
 	case valueTypeDict:
 		matchValuesDictBySubstring(bs, ch, bm, substring)
 	case valueTypeUint8:
-		matchUint8BySubstring(bs, ch, bm, substring)
+		matchUint8BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeUint16:
-		matchUint16BySubstring(bs, ch, bm, substring)
+		matchUint16BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeUint32:
-		matchUint32BySubstring(bs, ch, bm, substring)
+		matchUint32BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeUint64:
-		matchUint64BySubstring(bs, ch, bm, substring)
+		matchUint64BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeInt64:
-		matchInt64BySubstring(bs, ch, bm, substring)
+		matchInt64BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeFloat64:
 		matchFloat64BySubstring(bs, ch, bm, substring, tokens)
 	case valueTypeIPv4:
@@ -125,7 +125,7 @@ func matchValuesDictBySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, s
 	bbPool.Put(bb)
 }
 
-func matchUint8BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string) {
+func matchUint8BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string, tokens []uint64) {
 	if substring == "" {
 		// Fast path - all the uint8 values match an empty substring
 		return
@@ -139,7 +139,12 @@ func matchUint8BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substr
 		bm.resetBits()
 		return
 	}
-	// There is no need in matching against bloom filters, since tokens is empty.
+
+	if !matchBloomFilterAllTokens(bs, ch, tokens) {
+		bm.resetBits()
+		return
+	}
+
 	bb := bbPool.Get()
 	visitValues(bs, ch, bm, func(v string) bool {
 		s := toUint8String(bs, bb, v)
@@ -148,7 +153,7 @@ func matchUint8BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substr
 	bbPool.Put(bb)
 }
 
-func matchUint16BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string) {
+func matchUint16BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string, tokens []uint64) {
 	if substring == "" {
 		// Fast path - all the uint16 values match an empty substring
 		return
@@ -162,7 +167,12 @@ func matchUint16BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 		bm.resetBits()
 		return
 	}
-	// There is no need in matching against bloom filters, since tokens is empty.
+
+	if !matchBloomFilterAllTokens(bs, ch, tokens) {
+		bm.resetBits()
+		return
+	}
+
 	bb := bbPool.Get()
 	visitValues(bs, ch, bm, func(v string) bool {
 		s := toUint16String(bs, bb, v)
@@ -171,7 +181,7 @@ func matchUint16BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 	bbPool.Put(bb)
 }
 
-func matchUint32BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string) {
+func matchUint32BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string, tokens []uint64) {
 	if substring == "" {
 		// Fast path - all the uint32 values match an empty substring
 		return
@@ -185,7 +195,12 @@ func matchUint32BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 		bm.resetBits()
 		return
 	}
-	// There is no need in matching against bloom filters, since tokens is empty.
+
+	if !matchBloomFilterAllTokens(bs, ch, tokens) {
+		bm.resetBits()
+		return
+	}
+
 	bb := bbPool.Get()
 	visitValues(bs, ch, bm, func(v string) bool {
 		s := toUint32String(bs, bb, v)
@@ -194,7 +209,7 @@ func matchUint32BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 	bbPool.Put(bb)
 }
 
-func matchUint64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string) {
+func matchUint64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string, tokens []uint64) {
 	if substring == "" {
 		// Fast path - all the uint64 values match an empty substring
 		return
@@ -208,7 +223,12 @@ func matchUint64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 		bm.resetBits()
 		return
 	}
-	// There is no need in matching against bloom filters, since tokens is empty.
+
+	if !matchBloomFilterAllTokens(bs, ch, tokens) {
+		bm.resetBits()
+		return
+	}
+
 	bb := bbPool.Get()
 	visitValues(bs, ch, bm, func(v string) bool {
 		s := toUint64String(bs, bb, v)
@@ -217,7 +237,7 @@ func matchUint64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subst
 	bbPool.Put(bb)
 }
 
-func matchInt64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string) {
+func matchInt64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substring string, tokens []uint64) {
 	if substring == "" {
 		// Fast path - all the int64 values match an empty substring
 		return
@@ -233,7 +253,12 @@ func matchInt64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, substr
 			return
 		}
 	}
-	// There is no need in matching against bloom filters, since tokens is empty.
+
+	if !matchBloomFilterAllTokens(bs, ch, tokens) {
+		bm.resetBits()
+		return
+	}
+
 	bb := bbPool.Get()
 	visitValues(bs, ch, bm, func(v string) bool {
 		s := toInt64String(bs, bb, v)
@@ -257,6 +282,7 @@ func matchFloat64BySubstring(bs *blockSearch, ch *columnHeader, bm *bitmap, subs
 		bm.resetBits()
 		return
 	}
+
 	if !matchBloomFilterAllTokens(bs, ch, tokens) {
 		bm.resetBits()
 		return
@@ -310,29 +336,6 @@ func matchTimestampISO8601BySubstring(bs *blockSearch, ch *columnHeader, bm *bit
 		return matchSubstring(s, substring)
 	})
 	bbPool.Put(bb)
-}
-
-func getTokensSkipFirstLast(s string) []string {
-	// Skip first token
-	for {
-		r, runeSize := utf8.DecodeRuneInString(s)
-		if !isTokenRune(r) {
-			break
-		}
-		s = s[runeSize:]
-	}
-
-	// Skip last token
-	for {
-		r, runeSize := utf8.DecodeLastRuneInString(s)
-		if !isTokenRune(r) {
-			break
-		}
-		s = s[:len(s)-runeSize]
-	}
-
-	// Tokenize the remaining string
-	return tokenizeStrings(nil, []string{s})
 }
 
 func matchSubstring(s, substring string) bool {
