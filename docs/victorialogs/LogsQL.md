@@ -2970,7 +2970,7 @@ See also:
 ### split pipe
 
 The `<q> | split <separator> from <src_field> as <dst_field>` [pipe](#pipes) splits `<src_field>` [log field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#data-model)
-obtained from `<q>` [query](#query-syntax) results into `<dst_field>` as a JSON array, bu using the given `<separator>`.
+obtained from `<q>` [query](#query-syntax) results into `<dst_field>` as a JSON array, by using the given `<separator>`.
 
 For example, the following query splits [log messages](https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field) by `,` and stores the results into `items` field:
 
