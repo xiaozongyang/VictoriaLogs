@@ -274,17 +274,23 @@ The `/internal/force_flush` endpoint can be protected from unauthorized access v
 
 ### High Availability (HA) Setup with VictoriaLogs Single-Node Instances
 
-This schema outlines how to configure a High Availability (HA) setup using VictoriaLogs Single-Node instances. The setup consists of the following components:
+The setup consists of the following components:
 
-- **Log Collector**: The log collector should support multiplexing incoming data to multiple outputs (destinations). Popular log collectors like [Fluent Bit](https://docs.fluentbit.io/manual/concepts/data-pipeline/router), [Logstash](https://www.elastic.co/guide/en/logstash/current/output-plugins.html), [Fluentd](https://docs.fluentd.org/output/copy), and [Vector](https://vector.dev/docs/reference/configuration/sinks/) already offer this capability. Refer to their documentation for configuration details.
+- **Log Collector**: The log collector should support sending the same collected data to multiple destinations (aka replication).
+It is recommended to use [vlagent](https://docs.victoriametrics.com/victorialogs/vlagent/). Otherp popular log collectors also provide this ability:
+- [How to setup replication at FluentBit](https://docs.fluentbit.io/manual/concepts/data-pipeline/router)
+- [How to setup replication at Logstash](https://www.elastic.co/guide/en/logstash/current/output-plugins.html)
+- [How to setup replication at Fluentd](https://docs.fluentd.org/output/copy)
+- [How to setup replication at Vector](https://vector.dev/docs/reference/configuration/sinks/)
 
-- **VictoriaLogs Single-Node Instances**: Use two or more instances to achieve HA.
+- **VictoriaLogs Single-Node Instances**: send copies of the collected logs to multiple instances of VictoriaLogs in distinct availability zones to achieve HA.
 
-- **[vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/#load-balancing) or Load Balancer**: Used for reading data from one of the replicas to ensure balanced and redundant access.
+- **[vmauth](https://docs.victoriametrics.com/victoriametrics/vmauth/#load-balancing)**: query logs via `vmauth` - it balances incoming queries among available VictoriaLogs instances,
+  and automatically re-routes requests to healthy backends if some of the instances are temporarily unavailable.
 
 ![VictoriaLogs Single-Node Instance High-Availability schema](ha-victorialogs-single-node.webp)
 
-Here are the working example of HA configuration for VictoriaLogs using Docker Compose:
+Here are the working examples of HA configuration for VictoriaLogs using Docker Compose:
 
 - [Fluent Bit + VictoriaLogs Single-Node + vmauth](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/fluentbit/jsonline-ha)
 - [Logstash + VictoriaLogs Single-Node + vmauth](https://github.com/VictoriaMetrics/VictoriaLogs/tree/master/deployment/docker/victorialogs/logstash/jsonline-ha)
