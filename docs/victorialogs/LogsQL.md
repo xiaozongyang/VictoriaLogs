@@ -722,11 +722,11 @@ See also:
 
 ### Substring filter
 
-If it is needed to find logs with some substring, then `*"substring"*` filter can be used. The substring can be but in quotes according to [these docs](#string-literals).
+If it is needed to find logs with some substring, then `*substring*` filter can be used. The substring can be but in quotes according to [these docs](#string-literals) if needed.
 For example, the following query matches log entries, which contain `ampl` text in the [`_msg` field](https://docs.victoriametrics.com/victorialogs/keyconcepts/#message-field):
 
 ```logsql
-*"ampl"*
+*ampl*
 ```
 
 It matches the following messages:
