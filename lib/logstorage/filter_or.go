@@ -147,19 +147,22 @@ func getCommonTokensForOrFilters(filters []filter) []fieldTokens {
 		case *filterExactPrefix:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
+		case *filterPatternMatch:
+			tokens := t.getTokens()
+			mergeFieldTokens(t.fieldName, tokens)
 		case *filterPhrase:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
 		case *filterPrefix:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
-		case *filterSubstring:
-			tokens := t.getTokens()
-			mergeFieldTokens(t.fieldName, tokens)
 		case *filterRegexp:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
 		case *filterSequence:
+			tokens := t.getTokens()
+			mergeFieldTokens(t.fieldName, tokens)
+		case *filterSubstring:
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
 		case *filterAnd:

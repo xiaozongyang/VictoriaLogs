@@ -1406,6 +1406,12 @@ func TestParseQuery_Success(t *testing.T) {
 	f("a:len_range", `a:"len_range"`)
 	f("a:len_range-foo", `a:"len_range-foo"`)
 	f("len_range-foo:b", `"len_range-foo":b`)
+	f("pattern_match", `"pattern_match"`)
+	f("pattern_match_full", `"pattern_match_full"`)
+	f("pattern_match:a", `"pattern_match":a`)
+	f("pattern_match_full:a", `"pattern_match_full":a`)
+	f("a:pattern_match", `a:"pattern_match"`)
+	f("a:pattern_match_full", `a:"pattern_match_full"`)
 	f("range", `"range"`)
 	f("range:a", `"range":a`)
 	f("range-foo", `"range-foo"`)
@@ -1550,6 +1556,12 @@ func TestParseQuery_Success(t *testing.T) {
 	f(`len_range(10, 1_000_000)`, `len_range(10, 1_000_000)`)
 	f(`len_range(0x10,0b100101)`, `len_range(0x10, 0b100101)`)
 	f(`len_range(1.5KB, 22MB100KB)`, `len_range(1.5KB, 22MB100KB)`)
+
+	// pattern_match filter
+	f(`pattern_match("<N> foo <DATE>, bar")`, `pattern_match("<N> foo <DATE>, bar")`)
+
+	// pattern_match_full filter
+	f(`pattern_match_full("<N> foo <DATE>, bar")`, `pattern_match_full("<N> foo <DATE>, bar")`)
 
 	// range filter
 	f(`range(1.234, 5656.43454)`, `range(1.234, 5656.43454)`)
@@ -2366,6 +2378,14 @@ func TestParseQuery_Failure(t *testing.T) {
 	f(`len_range(1, bar)`)
 	f(`len_range(1, 2`)
 	f(`len_range(1.2, 3.4)`)
+
+	// invalid pattern_match
+	f(`pattern_match()`)
+	f(`pattern_match(`)
+
+	// invalid pattern_match_all
+	f(`pattern_match_all()`)
+	f(`pattern_match_all(`)
 
 	// invalid range
 	f(`range(`)
