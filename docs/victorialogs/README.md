@@ -808,7 +808,7 @@ Pass `-help` to VictoriaLogs in order to see the list of supported command-line 
         Supports an array of values separated by comma or specified via multiple flags.
         Value can contain comma inside single-quoted or double-quoted string, {}, [] and () braces.
   -syslog.listenAddr.unix array
-        Comma-separated list of Unix socket filepaths to listen to for Syslog messages. Filepaths may be prepended with 'unixpacket:'  for listening for SOCK_DGRAM sockets. By default SOCK_STREAM sockets are used. See https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/
+        Comma-separated list of Unix socket filepaths to listen to for Syslog messages. Filepaths may be prepended with 'unixgram:'  for listening for SOCK_DGRAM sockets. By default SOCK_STREAM sockets are used. See https://docs.victoriametrics.com/victorialogs/data-ingestion/syslog/
         Supports an array of values separated by comma or specified via multiple flags.
         Value can contain comma inside single-quoted or double-quoted string, {}, [] and () braces.
   -syslog.mtls array
