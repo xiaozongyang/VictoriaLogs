@@ -317,7 +317,7 @@ again:
 				return
 			}
 			b = utf8.AppendRune(b, ch)
-			size += len(s[size:]) - len(newTail)
+			size = len(s) - len(newTail)
 		}
 		size++
 		lex.token = string(b)
