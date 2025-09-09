@@ -1,10 +1,11 @@
 ---
-weight: 3
+title: vlagent
+weight: 4
 menu:
   docs:
-    parent: victorialogs
-    weight: 3
-title: vlagent
+    weight: 4
+    parent: "victorialogs"
+    identifier: vlagent
 tags:
   - logs
 aliases:

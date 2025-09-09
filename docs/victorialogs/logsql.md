@@ -1,17 +1,19 @@
 ---
-weight: 5
 title: LogsQL
+weight: 7
 menu:
   docs:
+    weight: 7
+    identifier: logsql
     parent: "victorialogs"
-    weight: 5
 tags:
   - logs
 aliases:
-- /VictoriaLogs/LogsQL.html
-- /victorialogs/LogsQL.html
-- /victorialogs/LogsQL/
+  - /VictoriaLogs/LogsQL.html
+  - /victorialogs/LogsQL.html
+  - /victorialogs/LogsQL/
 ---
+
 LogsQL is a simple yet powerful query language for [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/).
 See [examples](https://docs.victoriametrics.com/victorialogs/logsql-examples/), [LogsQL tutorial](#logsql-tutorial),
 [how to convert Loki queries to VictoriaLogs queries](https://docs.victoriametrics.com/victorialogs/logql-to-logsql/)

@@ -1,11 +1,11 @@
 ---
-weight: 7
+weight: 101
 title: CHANGELOG
 menu:
   docs:
     identifier: "victorialogs-changelog"
     parent: "victorialogs"
-    weight: 7
+    weight: 101
     title: CHANGELOG
 tags:
   - logs
